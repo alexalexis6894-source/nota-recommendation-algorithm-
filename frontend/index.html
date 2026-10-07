@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>НОТА: прототип приложения подбора аромата</title>
+<meta name="description" content="НОТА: ваши духи, личные группы, похожие ароматы и набор пробников.">
+<meta name="theme-color" content="#F1F2EF">
+<meta name="color-scheme" content="light">
+<meta name="nota-api-base" content="/api">
+<script>
+/* Переезд на nota.staytech.ru. На старом адресе страница берёт из браузера сессию, оценки и id
+   посетителя и передаёт их новому адресу после # в ссылке: эта часть не уходит на сервер и не
+   попадает в журналы. Новый адрес сохраняет данные, если своих ещё нет, и сразу убирает их из адреса. */
+(function () {
+  var KEYS = ['nota.recognition.token', 'nota.mobile.v1', 'nota-vid'], NEW = 'https://nota.staytech.ru/';
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  if (location.hostname === 'staytech.ru' || location.hostname === 'www.staytech.ru') {
+    var data = {}, parts = [], to = location.hash.replace(/^#/, '');
+    KEYS.forEach(function (k) { var v = get(k); if (v != null) data[k] = v; });
+    if (Object.keys(data).length) parts.push('move=' + encodeURIComponent(JSON.stringify(data)));
+    if (to) parts.push('to=' + encodeURIComponent(to));
+    location.replace(NEW + location.search + (parts.length ? '#' + parts.join('&') : ''));
+    return;
+  }
+  if (!/^#(move|to)=/.test(location.hash)) return;
+  var params = new URLSearchParams(location.hash.slice(1)), moved = {};
+  try { moved = JSON.parse(params.get('move') || '{}') || {}; } catch (e) { moved = {}; }
+  KEYS.forEach(function (k) {
+    try { if (typeof moved[k] === 'string' && localStorage.getItem(k) == null) localStorage.setItem(k, moved[k]); } catch (e) { /* хранилище закрыто */ }
+  });
+  var target = params.get('to') || '';
+  history.replaceState(null, '', location.pathname + location.search + (target ? '#' + target.replace(/^#/, '') : ''));
+})();
+</script>
+<link rel="stylesheet" href="./app.css">
+<link rel="stylesheet" href="./recognition.css?v=20260930-series-1">
+<link rel="stylesheet" href="./groups.css?v=20261002-kit-2">
+<link rel="stylesheet" href="./music.css?v=3-mini">
+<!--st-co-head--><link rel="stylesheet" href="/staytech/by-signature.css?v=20261003c"><link rel="stylesheet" href="/staytech/st-fit.css?v=20261003c"><style>.app .top .st-pair{margin-right:auto}.app .top .st-co{--h:20px;gap:4px;min-width:44px;padding:0 9px 0 2px;border-radius:8px}.app .top .st-co-arrow{position:absolute;right:0;top:9px;width:10px;height:10px;margin:0}@media(max-width:420px){.app .top .proto{display:none}}@media(max-width:371px){.app .top .st-co{--h:17px}}</style><!--/st-co-head-->
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержанию</a>
+
+<div class="app" id="app">
+  <header class="top glass">
+    <!--st-co--><span class="st-pair"><a class="brand" href="#/collection" aria-label="НОТА, на главный экран">НОТА</a><!--st-sig--><a class="st-co" href="https://staytech.ru/" target="_blank" rel="noopener"><span class="st-co-by" aria-hidden="true">by</span><span class="st-co-logo"><img class="st-co-img-light" src="/staytech/staytech-transparent.png" alt="by Staytech" width="855" height="208"><img class="st-co-img-dark" src="/staytech/staytech-transparent-dark.png" alt="" width="900" height="208" loading="lazy"></span><svg class="st-co-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sr-only">, сайт staytech.ru откроется в новой вкладке</span></a></span><!--/st-co-->
+    <span class="proto">Прототип</span>
+    <button class="icon-btn" type="button" id="music-toggle" aria-label="Открыть музыкальный плеер" aria-expanded="false" aria-controls="music-panel"><span aria-hidden="true">♫</span></button>
+    <button class="icon-btn" type="button" id="more-btn" data-testid="more-open" aria-haspopup="dialog">Ещё</button>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <p class="storage-note" id="storage-note" hidden data-testid="storage-note"></p>
+
+    <!-- Коллекция -->
+    <section class="view" id="view-collection" data-view="collection" aria-labelledby="h-collection" data-testid="view-collection">
+      <h1 class="view-title" id="h-collection" tabindex="-1">Коллекция</h1>
+      <p class="view-sub">Ароматы, которые вы уже знаете. Из них складывается вкус.</p>
+
+      <!-- Реальная коллекция: только позиции каталога, сохранённые сервером, отдельно от демо -->
+      <section class="rx-mine" aria-labelledby="rx-mine-title" data-testid="rx-collection">
+        <div class="rx-mine-head">
+          <h2 id="rx-mine-title" tabindex="-1">Мои ароматы</h2>
+          <span class="rx-mine-count" id="rx-mine-count"></span>
+        </div>
+        <p class="rx-mine-sub">Ароматы из каталога НОТА, которые вы добавили</p>
+        <ul class="list rx-mine-list" id="rx-mine-list">
+          <li class="rx-add-row" id="rx-add-row"><button class="rx-hero" type="button" id="rx-open" aria-haspopup="dialog" data-testid="rx-open">
+        <span class="rx-hero-icon" aria-hidden="true"><svg viewBox="0 0 28 28" focusable="false"><path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9M19 4h2.5A2.5 2.5 0 0 1 24 6.5V9M24 19v2.5a2.5 2.5 0 0 1-2.5 2.5H19M9 24H6.5A2.5 2.5 0 0 1 4 21.5V19"/><path d="M10.5 14h7M14 10.5v7"/></svg></span>
+        <span class="rx-hero-text">
+          <span class="rx-hero-title">Добавить аромат</span>
+          <span class="rx-hero-state" id="rx-hero-state" hidden></span>
+        </span>
+        <span class="rx-hero-go" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 5l7 7-7 7"/></svg></span>
+      </button></li>
+        </ul>
+        <div id="rx-mine-state" aria-live="polite"></div>
+      </section>
+
+      <div class="ng-next"><button class="btn" type="button" id="create-from-collection">Собрать группу</button><p class="muted" id="group-intro">Добавьте любимые духи, чтобы найти похожие.</p></div>
+    </section>
+
+    <section class="view" id="view-taste" data-view="taste" hidden>
+      <div id="groups-home"><h1 class="view-title" tabindex="-1">Мои группы</h1><p class="view-sub">Для вечера, лета или просто по настроению. Выбирайте духи, в нотах разбираться не нужно.</p><button class="btn ng-create" id="create-group" type="button">Новая группа</button><div id="groups-list" aria-live="polite"></div></div>
+      <div id="group-detail" hidden></div>
+    </section>
+    <section class="view" id="view-picks" data-view="picks" hidden>
+      <h1 class="view-title" tabindex="-1">Мой набор</h1><p class="view-sub">Пробники ароматов, которые хочется узнать ближе.</p><div id="sample-list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Мини-набор над вкладками: виден после первого добавления, ведёт к заявке -->
+  <div class="ng-kitbar" id="kit-bar" hidden>
+    <button type="button" id="kit-bar-go" data-testid="kit-bar"><span id="kit-bar-text">В наборе</span><span class="ng-kitbar-go" aria-hidden="true">К набору →</span></button>
+  </div>
+
+  <nav class="tabs glass" aria-label="Разделы">
+    <a class="tab" href="#/collection" data-tab="collection" data-testid="tab-collection">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="3" width="6" height="18" rx="2"/><rect x="14" y="7" width="6" height="14" rx="2"/></svg>
+      <span>Коллекция</span>
+    </a>
+    <a class="tab" href="#/taste" data-tab="taste" data-testid="tab-taste">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 18h16M4 12h11M4 6h7"/></svg>
+      <span>Группы</span>
+    </a>
+    <a class="tab" href="#/picks" data-tab="picks" data-testid="tab-picks">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="9" width="18" height="6" rx="3"/><path d="M8 9v6"/></svg>
+      <span>Пробники</span>
+      <b class="badge" id="kit-badge" hidden></b>
+    </a>
+  </nav>
+</div>
+
+<p class="ng-notice" id="ng-notice" role="status" hidden></p>
+<dialog class="sheet" id="group-editor" aria-labelledby="group-editor-title">
+ <div class="sheet-head"><h2 id="group-editor-title">Новая группа</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <form class="sheet-body" id="group-form">
+  <p class="muted">Какие ароматы объединяем? Один аромат может быть в нескольких группах.</p>
+  <div id="group-members"></div>
+  <label class="field-label" for="group-name">Название группы</label><input class="field" id="group-name" maxlength="60" placeholder="Например, Вечер">
+  <p class="ng-caption">Выберите название или напишите своё</p><div id="group-name-options" class="ng-tags"></div>
+  <p id="group-error" class="rx-err" role="alert"></p><button class="btn ng-save" type="submit" id="group-save">Найти похожие ароматы</button>
+ </form>
+</dialog>
+<dialog class="sheet" id="sample-preview" aria-labelledby="preview-title">
+ <div class="sheet-head"><h2 id="preview-title">Ваш набор пробников</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <div class="sheet-body" id="sample-preview-body"></div>
+</dialog>
+<dialog class="sheet" id="group-menu" aria-labelledby="menu-title">
+ <div class="sheet-head"><h2 id="menu-title">Группа</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <div class="sheet-body" id="menu-body"></div>
+</dialog>
+<dialog class="sheet" id="share-sheet" aria-labelledby="share-title">
+ <div class="sheet-head"><h2 id="share-title">Поделиться вкусом</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <div class="sheet-body" id="share-body"></div>
+</dialog>
+<dialog class="sheet ng-rank-sheet" id="rank-sheet" aria-labelledby="rank-title">
+ <div class="sheet-head"><h2 id="rank-title">Ароматы в группе</h2><button class="close" type="button" data-ng-close>Готово</button></div>
+ <div class="sheet-body" id="rank-body"></div>
+</dialog>
+<dialog class="sheet" id="rec-sheet" aria-labelledby="rec-title">
+ <div class="sheet-head"><h2 id="rec-title">Аромат</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <div class="sheet-body" id="rec-body"></div>
+</dialog>
+<dialog class="sheet" id="sheet-more" aria-labelledby="more-title">
+ <div class="sheet-head"><h2 id="more-title">О НОТА</h2><button class="close" type="button" data-ng-close>Закрыть</button></div>
+ <div class="sheet-body"><p>Добавляйте знакомые духи, объединяйте их в группы и открывайте похожие ароматы. Цветные метки показывают общие оттенки характера по каталогу.</p><p class="muted">Набор пробников сохраняется. Сейчас оформление тестовое, без оплаты и отправки заказа.</p></div>
+</dialog>
+<!-- Независимый лист распознавания и поиска -->
+<template id="rx-sheet-tpl">
+  <dialog class="sheet rx-sheet" id="sheet-photo" aria-labelledby="rx-title" data-testid="sheet-photo">
+    <div class="sheet-head rx-head">
+      <div>
+        <p class="rx-wordmark" aria-hidden="true">НОТА</p>
+        <h2 id="rx-title" tabindex="-1">Добавить аромат</h2>
+      </div>
+      <button class="close" type="button" data-rx-act="close" data-testid="rx-close">Закрыть</button>
+      <div class="seg two rx-seg" role="group" aria-label="Способ добавления" data-rx="seg" data-testid="rx-mode">
+        <button type="button" data-rx-act="mode" data-rx-mode="name" aria-pressed="true" aria-controls="rx-pane-name" data-testid="rx-mode-name">По названию</button>
+        <button type="button" data-rx-act="mode" data-rx-mode="photo" aria-pressed="false" aria-controls="rx-pane-photo" data-testid="rx-mode-photo">По фото</button>
+      </div>
+    </div>
+    <div class="sheet-body rx-body">
+      <!-- По названию: работает всегда, не зависит от распознавания -->
+      <section class="rx-pane" id="rx-pane-name" data-rx="pane-name" aria-label="Добавить по названию" data-testid="rx-pane-name">
+        <div class="rx-search" role="search">
+          <label class="field-label" for="rx-free-q">Название или марка</label>
+          <div class="rx-search-row">
+            <input class="field" id="rx-free-q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Марка и название" data-rx="free-q" data-rx-fk="free-q" data-testid="rx-free-search">
+            <button class="btn quiet rx-go" type="button" data-rx-act="free-go" data-rx-fk="free-go" data-testid="rx-free-go">Найти</button>
+          </div>
+        </div>
+        <p class="rx-hint" data-rx="photo-note" data-testid="rx-unavailable" hidden>Добавление по фото сейчас выключено.</p>
+        <p class="rx-free-status" data-rx="free-status" aria-live="polite" data-testid="rx-free-status"></p>
+        <ul class="rx-free" data-rx="free-results" aria-label="Найдено в каталоге НОТА" data-testid="rx-free-results"></ul>
+      </section>
+
+      <!-- По фото: действующий сценарий распознавания -->
+      <section class="rx-pane" id="rx-pane-photo" data-rx="pane-photo" aria-label="Добавить по фото" data-testid="rx-pane-photo" hidden>
+      <p class="rx-caps" data-rx="caps" hidden>Проверяем, доступно ли распознавание</p>
+      <div class="rx-panel" data-rx="caps-error" hidden>
+        <p>Не удалось проверить распознавание по фото.</p>
+        <div class="row">
+          <button class="btn quiet" type="button" data-rx-act="caps-retry" data-rx-fk="caps-retry">Проверить снова</button>
+          <button class="btn quiet" type="button" data-rx-act="mode" data-rx-mode="name">Найти по названию</button>
+        </div>
+      </div>
+      <div class="rx-panel" data-rx="photo-off" data-testid="rx-photo-off" hidden>
+        <p>Новые снимки сейчас не распознаются. Найденные флаконы можно подтвердить ниже.</p>
+        <button class="btn quiet" type="button" data-rx-act="caps-retry">Проверить снова</button>
+        <button class="btn quiet" type="button" data-rx-act="mode" data-rx-mode="name">Найти по названию</button>
+      </div>
+      <div class="rx-intake" data-rx="intake" hidden>
+        <p class="rx-lead" data-rx="lead"></p>
+        <div class="rx-pickers">
+          <label class="btn rx-pick"><input class="rx-file" type="file" accept="image/*,.heic,.heif" multiple data-rx="file" data-testid="rx-file"><span>Выбрать фото</span></label>
+          <label class="btn quiet rx-pick rx-pick-camera"><input class="rx-file" type="file" accept="image/*" capture="environment" data-rx="camera" data-testid="rx-camera"><span>Снять флаконы</span></label>
+        </div>
+        <p class="rx-limit" data-rx="limit" hidden></p>
+        <ol class="rx-tray" data-rx="tray" aria-label="Выбранные снимки" hidden></ol>
+      </div>
+      <div class="rx-results" data-rx="results" hidden></div>
+      <button class="text-btn rx-clear" type="button" data-rx-act="clear" data-rx="clear" hidden>Очистить снимки и результаты</button>
+      </section>
+      <p class="vh" data-rx="live" aria-live="polite"></p>
+    </div>
+    <div class="rx-foot" data-rx="foot" hidden>
+      <button class="btn rx-bulk" type="button" data-rx-act="bulk" data-rx="bulk" data-rx-fk="bulk" data-testid="rx-bulk" hidden>Добавить отмеченные</button>
+      <button class="btn rx-send" type="button" data-rx-act="send" data-rx="send" data-rx-fk="send" data-testid="rx-send">Распознать</button>
+      <p class="rx-foot-note" data-rx="send-note"></p>
+    </div>
+  </dialog>
+</template>
+
+<noscript><p class="noscript">Прототип работает с включённым JavaScript.</p></noscript>
+<script>
+// Личная ссылка передает приглашение во фрагменте, который не отправляется серверу.
+(function () {
+  function receiveInvite() {
+    var match = location.hash.match(/^#personal=([A-Za-z0-9_-]{32,128})$/);
+    if (!match) return;
+    window.notaPersonalInvite = match[1];
+    history.replaceState(null, '', location.pathname + location.search + '#/collection');
+    window.dispatchEvent(new Event('nota-personal-invite'));
+  }
+  receiveInvite();
+  window.addEventListener('hashchange', receiveInvite);
+})();
+</script>
+
+<!-- Яндекс Метрика, вебвизор выключен. Подключается до track.js: notaTrack сразу отправляет цели в счётчик. -->
+<script src="./metrika.js?v=20261002-ym-1"></script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113333784" style="position:absolute;left:-9999px" alt=""></div></noscript>
+<script src="./track.js?v=20261002-rank-1"></script>
+<script src="./recognition.js?v=20261002-order-2"></script>
+<script src="./share.js?v=20261004-site-1"></script>
+<script src="./groups.js?v=20261002-kit-2"></script>
+<audio id="nota-music" preload="none"></audio>
+<section id="music-panel" aria-label="Музыкальный плеер" hidden>
+  <div class="music-info"><b id="music-title">Ноты</b><small id="music-artist">HammAli &amp; Navai</small></div>
+  <button id="music-prev" class="music-control" aria-label="Предыдущий трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3v16H5zM20 4v16L8 12z"/></svg></button>
+  <button id="music-play" class="music-control" aria-label="Воспроизвести"><svg class="music-start" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v18l15-9z"/></svg><svg class="music-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg></button>
+  <button id="music-next" class="music-control" aria-label="Следующий трек"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h3v16h-3zM4 4l12 8-12 8z"/></svg></button>
+  <span class="music-line" aria-hidden="true"><i id="music-progress"></i></span>
+  <p id="music-status" role="status"></p>
+</section>
+<script src="./music.js?v=3-mini-2"></script>
+</body>
+</html>

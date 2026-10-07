@@ -1,0 +1,6 @@
+# Шлюз API НОТА: все адреса /api/... обрабатывает index.php, заголовок Authorization передаётся.
+Options -Indexes
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule ^ index.php [L]

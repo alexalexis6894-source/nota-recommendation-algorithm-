@@ -1,0 +1,407 @@
+/* НОТА Air: добавление ароматов по названию и по фото. Фарфор, олива, дымчатый и бронза, без синего и без фоновых флаконов */
+
+/* ========== Экран коллекции: главный сценарий ========== */
+
+.rx-hero {
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .9rem;
+  width: 100%; min-height: 44px; margin-top: 1.25rem; padding: 1.1rem 1rem 1.1rem 1.1rem;
+  border: 0; border-radius: 24px; text-align: left; cursor: pointer;
+  color: #FAFAF7;
+  background: linear-gradient(155deg, #5A6752 0%, #4B5747 52%, #3E4939 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 20px 40px -28px rgba(31, 33, 36, .7);
+  transition: transform 100ms ease-out, box-shadow 160ms ease;
+}
+.rx-hero:active { transform: scale(.98); }
+.rx-hero:focus-visible { outline: 3px solid var(--line-blue); outline-offset: 3px; border-radius: 24px; }
+.rx-hero-icon {
+  display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 16px;
+  background: rgba(250, 250, 247, .1); box-shadow: inset 0 0 0 1px rgba(250, 250, 247, .16);
+}
+.rx-hero-icon svg { width: 1.75rem; height: 1.75rem; fill: none; stroke: #D9C69E; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.rx-hero-text { display: grid; gap: .2rem; min-width: 0; }
+.rx-hero-title { font-size: 1.1875rem; font-weight: 650; line-height: 1.2; letter-spacing: -.012em; }
+.rx-hero-sub { font-size: .9375rem; line-height: 1.4; color: rgba(250, 250, 247, .84); overflow-wrap: anywhere; }
+.rx-hero-state {
+  justify-self: start; margin-top: .35rem; padding: .15rem .65rem; border-radius: 999px;
+  font-size: .8125rem; font-weight: 650; color: #F6EEDC; background: rgba(150, 129, 93, .42);
+}
+.rx-hero-go svg { display: block; width: 1.25rem; height: 1.25rem; fill: none; stroke: rgba(250, 250, 247, .72); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Реальная коллекция: отдельно от демо-оценок */
+.rx-mine { margin-top: 1.5rem; }
+.rx-mine-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+.rx-mine-head h2 { font-size: 1.25rem; line-height: 1.2; letter-spacing: -.01em; }
+.rx-mine-count { font-size: .9375rem; font-weight: 600; color: var(--ice-2); }
+.rx-mine-sub { margin-top: .2rem; font-size: .875rem; color: var(--ice-2); }
+.rx-mine-list { margin-top: .6rem; }
+.rx-mine-dot { --tint: var(--champagne); }
+.rx-mine-note {
+  display: grid; gap: .5rem; margin-top: .6rem; padding: .9rem 1rem; border-radius: 18px;
+  background: var(--deep); color: var(--ice-2); font-size: .9375rem;
+}
+.rx-mine-note .btn { justify-self: start; min-height: 44px; }
+.rx-divider {
+  display: flex; align-items: center; gap: .75rem; margin-top: 2rem;
+  font-size: .8125rem; font-weight: 650; letter-spacing: .02em; color: var(--ice-2);
+}
+.rx-divider::after { content: ""; flex: 1 1 2rem; height: 1px; background: var(--hair); }
+
+/* ========== Лист добавления: по названию и по фото ========== */
+
+.rx-wordmark { font-size: .75rem; font-weight: 700; letter-spacing: .2em; color: var(--champagne); margin-bottom: .1rem; }
+/* Заголовок получает фокус программно при открытии листа: рамку на нём не рисуем.
+   Правило точечное, только этот заголовок; кнопки и поля сохраняют свою рамку фокуса */
+.rx-sheet #rx-title[tabindex="-1"]:focus,
+.rx-sheet #rx-title[tabindex="-1"]:focus-visible { outline: none; box-shadow: none; }
+
+/* Высота листа постоянная: при поиске он не прыгает, результаты прокручиваются внутри */
+@media (min-width: 600px) {
+  dialog.sheet.rx-sheet { min-height: min(34rem, 88vh); min-height: min(34rem, 88dvh); }
+}
+dialog.sheet.rx-sheet[open] { display: flex; flex-direction: column; }
+.rx-sheet .sheet-head { flex: none; }
+.rx-sheet .rx-body { flex: 1 0 auto; align-content: start; }
+.rx-sheet .rx-foot { flex: none; }
+@media (max-width: 599px) {
+  dialog.sheet.rx-sheet {
+    height: 92vh; height: 92dvh;
+    /* --rx-vh и --rx-kb выставляет скрипт по visualViewport: лист всегда над экранной клавиатурой */
+    max-height: calc(var(--rx-vh, 100dvh) - max(.5rem, env(safe-area-inset-top, 0px)));
+    margin-bottom: var(--rx-kb, 0px);
+  }
+  /* Под клавиатурой нижний отступ безопасной зоны не нужен */
+  dialog.sheet.rx-sheet.has-kb { padding-bottom: 0; }
+  dialog.sheet.rx-sheet.has-kb .rx-foot { padding-bottom: .85rem; }
+}
+
+/* Переключатель способа: сегменты под заголовком, как в системных листах */
+.rx-sheet .rx-head > .rx-seg { flex: 1 1 100%; margin-top: .15rem; }
+.rx-seg button { min-height: 44px; }
+
+.rx-body { gap: 1.1rem; }
+.rx-pane { display: grid; gap: .9rem; min-width: 0; }
+.rx-caps, .rx-lead { color: var(--ice-2); font-size: .9375rem; }
+.rx-panel {
+  display: grid; gap: .7rem; padding: .9rem 1rem; border-radius: 16px;
+  background: var(--deep); box-shadow: inset 0 0 0 1px var(--hair);
+}
+.rx-panel .btn { justify-self: start; }
+.rx-panel .row .btn { flex: 1 1 10rem; }
+.rx-intake { display: grid; gap: .9rem; }
+.rx-hint { font-size: .875rem; color: var(--ice-2); }
+.rx-err { font-size: .875rem; color: var(--rose); }
+
+/* Нативные поля выбора файла на всю площадь кнопки */
+.rx-pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: .6rem; }
+.rx-pick { position: relative; overflow: hidden; min-height: 52px; -webkit-tap-highlight-color: transparent; }
+.rx-pick:active { transform: scale(.97); }
+.rx-pick:focus-within { outline: 3px solid var(--line-blue); outline-offset: 2px; }
+.rx-file {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+  opacity: 0; cursor: pointer; font-size: 1rem;
+}
+.rx-file:focus { outline: none; }
+@media (hover: hover) and (pointer: fine) { .rx-pickers .rx-pick-camera { display: none; } }
+.rx-limit { font-size: .875rem; font-weight: 600; color: var(--champagne); }
+
+/* Лента снимков: строка на снимок, статус словами */
+.rx-sheet .rx-tray, .rx-sheet .rx-bottles, .rx-sheet .rx-free, .rx-sheet .rx-warn { padding-left: 0; }
+.rx-sheet .rx-free { gap: 0; }
+.rx-tray {
+  list-style: none; margin: 0; border-radius: 18px; background: var(--deep); overflow: clip;
+  container-type: inline-size;
+}
+.rx-row {
+  display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); align-items: center; gap: .35rem .8rem;
+  padding: .6rem .75rem .6rem .6rem; outline-offset: -3px;
+}
+.rx-row + .rx-row { box-shadow: inset 0 1px 0 var(--hair); }
+.rx-row:focus { outline: none; }
+.rx-row:focus-visible { outline: 3px solid var(--line-blue); }
+.rx-thumb-wrap { position: relative; grid-row: span 2; align-self: start; width: 3.5rem; height: 3.5rem; }
+.rx-thumb {
+  display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 12px;
+  object-fit: cover; background: var(--raised); color: var(--ice-2); font-size: .75rem; font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.rx-row-text { display: grid; gap: .1rem; min-width: 0; }
+.rx-row-text b { font-size: .9375rem; font-weight: 650; }
+.rx-row-status { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; color: var(--ice-2); }
+.rx-row-status::before { content: ""; flex: none; width: .55rem; height: .55rem; border-radius: 50%; background: #A29C94; }
+.rx-row.is-ready .rx-row-status::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--selected); }
+.rx-row.is-sending .rx-row-status::before, .rx-row.is-queued .rx-row-status::before { background: var(--champagne); }
+.rx-row.is-done .rx-row-status { color: var(--ice); }
+.rx-row.is-done .rx-row-status::before { background: var(--selected); }
+.rx-row.is-error .rx-row-status, .rx-row.is-invalid .rx-row-status { color: var(--rose); }
+.rx-row.is-error .rx-row-status::before, .rx-row.is-invalid .rx-row-status::before { background: var(--rose); }
+.rx-row-msg { font-size: .8125rem; color: var(--ice-2); overflow-wrap: anywhere; }
+.rx-row-acts { grid-column: 2; display: flex; flex-wrap: wrap; gap: .25rem; margin-left: -.75rem; }
+.rx-row-acts .text-btn { min-width: 44px; }
+@container (min-width: 22rem) {
+  .rx-row { grid-template-columns: 3.5rem minmax(0, 1fr) auto; }
+  .rx-thumb-wrap { grid-row: auto; }
+  .rx-row-acts { grid-column: auto; margin-left: 0; justify-content: flex-end; }
+}
+/* Отправленный снимок: тонкая бегущая полоска поверх превью */
+.rx-row.is-sending .rx-thumb-wrap::after {
+  content: ""; position: absolute; left: 6px; right: 6px; bottom: 6px; height: 3px; border-radius: 999px;
+  background: linear-gradient(90deg, rgba(250, 250, 247, .35) 0%, #D9C69E 50%, rgba(250, 250, 247, .35) 100%);
+  background-size: 200% 100%;
+  animation: rx-flow 1.2s linear infinite;
+}
+@keyframes rx-flow { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.rx-clear { justify-self: start; color: var(--ice-2); }
+
+/* Нижняя панель отправки: полупрозрачный материал поверх прокрутки */
+.rx-foot {
+  position: sticky; bottom: 0; z-index: 2;
+  display: grid; gap: .45rem;
+  padding: .75rem 1.25rem calc(.85rem + var(--safe-b));
+  background: rgba(233, 235, 231, .8);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 -1px 0 var(--hair);
+}
+.rx-send, .rx-bulk { width: 100%; min-height: 52px; }
+.rx-foot-note { font-size: .8125rem; color: var(--ice-2); text-align: center; }
+.rx-sheet .btn[aria-disabled="true"] { opacity: .5; cursor: default; transform: none; }
+
+/* ========== Результаты ========== */
+
+.rx-results { display: grid; gap: 1.5rem; }
+.rx-res { display: grid; gap: .8rem; animation: settle 360ms var(--press) both; }
+.rx-sheet .rx-res-title { margin: 0; font-size: 1.125rem; line-height: 1.2; letter-spacing: -.01em; }
+.rx-res-sub { font-size: .9375rem; color: var(--ice-2); }
+.rx-warn { list-style: none; margin: 0; font-size: .875rem; color: var(--champagne); }
+
+/* Снимок с рамками: соотношение сторон задаёт скрипт, рамки в долях */
+.rx-stage {
+  position: relative; justify-self: center;
+  width: min(100%, calc(min(50vh, 24rem) * var(--r, 1)));
+  aspect-ratio: var(--r, 1);
+  border-radius: 18px; overflow: hidden; background: #D9DCD6;
+  box-shadow: 0 16px 34px -26px rgba(31, 33, 36, .6);
+  scroll-margin: 5rem 0 7rem;
+}
+.rx-stage-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rx-box {
+  position: absolute; box-sizing: border-box;
+  border: 2px solid rgba(250, 250, 247, .92); border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(31, 33, 36, .35), inset 0 0 0 1px rgba(31, 33, 36, .25);
+  cursor: pointer; transition: opacity 160ms ease, border-color 160ms ease, box-shadow 220ms ease;
+}
+.rx-box-n {
+  position: absolute; top: -2px; left: -2px; min-width: 1.5rem; height: 1.5rem; padding: 0 .35rem;
+  border-radius: 9px 0 9px 0; background: rgba(31, 33, 36, .78); color: #FFFFFF;
+  font-size: .75rem; font-weight: 700; line-height: 1.5rem; text-align: center;
+}
+/* Выбранный флакон: остальное приглушено, рамка бронзовая */
+.rx-stage.has-sel .rx-box { opacity: .4; }
+.rx-stage.has-sel .rx-box.is-on {
+  z-index: 1; opacity: 1; border-width: 3px; border-color: #D9C69E;
+  box-shadow: 0 0 0 1px rgba(31, 33, 36, .5), 0 0 0 100vmax rgba(31, 33, 36, .34);
+}
+.rx-box.is-on .rx-box-n { background: var(--champagne); }
+
+/* Карточка флакона */
+.rx-bottles { list-style: none; margin: 0; display: grid; gap: .8rem; }
+.rx-bottle {
+  display: grid; gap: .8rem; min-width: 0; padding: 1rem; border-radius: 20px; background: var(--deep);
+  box-shadow: inset 0 0 0 1px transparent; transition: box-shadow 180ms ease;
+  scroll-margin: 5rem 0 7rem;
+}
+.rx-bottle.is-on { box-shadow: inset 0 0 0 2px var(--champagne); }
+.rx-b-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem .75rem; }
+.rx-b-n {
+  flex: none; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; margin-top: .1rem;
+  border-radius: 50%; background: var(--raised); font-size: .875rem; font-weight: 700;
+}
+.rx-bottle.is-on .rx-b-n { background: var(--champagne); color: #FFFFFF; }
+.rx-b-title { flex: 1 1 9rem; min-width: 0; }
+.rx-b-name { font-size: 1.0625rem; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+.rx-b-meta { font-size: .875rem; color: var(--ice-2); overflow-wrap: anywhere; }
+.rx-show { margin-left: auto; }
+.rx-show[aria-pressed="true"] { background: rgba(117, 100, 71, .14); color: #5E5038; }
+.rx-k { display: block; margin-bottom: .15rem; font-size: .75rem; font-weight: 650; letter-spacing: .03em; color: var(--ice-2); }
+.rx-read q { font-size: .9375rem; overflow-wrap: anywhere; }
+
+/* Уверенность: слово и объяснение, без процентов */
+.rx-conf { display: grid; gap: .35rem; padding: .75rem .85rem; border-radius: 14px; background: var(--sapphire); }
+.rx-conf p { font-size: .9375rem; }
+.rx-chip { justify-self: start; padding: .15rem .65rem; border-radius: 999px; font-size: .8125rem; font-weight: 650; }
+.rx-conf.is-high .rx-chip { background: rgba(78, 90, 74, .16); color: #3D4639; }
+.rx-conf.is-medium .rx-chip { background: rgba(117, 100, 71, .16); color: #5E5038; }
+.rx-conf.is-low .rx-chip { background: rgba(154, 68, 82, .12); color: var(--rose); }
+.rx-reason { color: var(--ice-2); font-size: .875rem !important; overflow-wrap: anywhere; }
+
+.rx-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.rx-alt {
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  min-height: 44px; max-width: 100%; padding: .4rem .9rem; border: 0; border-radius: 999px;
+  background: rgba(31, 33, 36, .05); box-shadow: inset 0 0 0 1px var(--hair);
+  font-size: .9375rem; font-weight: 600; text-align: left; cursor: pointer; overflow-wrap: anywhere;
+  transition: transform 90ms ease-out;
+}
+.rx-alt:active { transform: scale(.97); }
+
+/* Выбор варианта из каталога */
+.rx-choices, .rx-found { display: grid; gap: .5rem; min-width: 0; }
+.rx-fs { display: grid; gap: .4rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.rx-fs legend { padding: 0; margin-bottom: .4rem; font-size: .875rem; font-weight: 650; }
+.rx-opt {
+  display: flex; align-items: center; gap: .75rem; min-height: 52px; padding: .55rem .85rem;
+  border-radius: 14px; background: var(--sapphire); cursor: pointer;
+  box-shadow: inset 0 0 0 1px transparent; transition: box-shadow 140ms ease, background-color 140ms ease;
+}
+.rx-opt:has(input:checked) { background: rgba(78, 90, 74, .09); box-shadow: inset 0 0 0 2px var(--selected); }
+.rx-opt input { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--selected); }
+.rx-opt-text { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.rx-opt-text b { font-weight: 600; line-height: 1.3; }
+.rx-opt-text span { font-size: .875rem; color: var(--ice-2); }
+.rx-note { font-size: .9375rem; color: var(--ice-2); }
+
+.rx-search-wrap { display: grid; gap: .5rem; }
+.rx-toggle { justify-self: start; margin-left: -.75rem; }
+.rx-search { display: grid; gap: .5rem; min-width: 0; }
+.rx-search .field-label { margin-bottom: 0; font-size: .875rem; }
+.rx-search-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.rx-search-row .field { flex: 1 1 10rem; min-width: 0; }
+/* Не меньше 16 пикселей: Safari на iPhone не увеличивает страницу при фокусе в поле */
+.rx-sheet .field { font-size: max(16px, 1rem); }
+.rx-go { flex: none; min-height: 48px; }
+
+/* Результаты поиска по названию: строка аромата и кнопка «Добавить» */
+.rx-free-status { font-size: .875rem; color: var(--ice-2); }
+.rx-free-status:empty { display: none; }
+.rx-free-status.rx-err { color: var(--rose); }
+.rx-free { list-style: none; margin: 0; display: grid; gap: 0; border-radius: 16px; background: var(--deep); overflow: clip; }
+.rx-free:empty { display: none; }
+.rx-free[aria-busy="true"] { opacity: .55; transition: opacity 160ms ease; }
+.rx-free-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem;
+  min-height: 60px; padding: .6rem .6rem .6rem 1rem;
+}
+.rx-free-item + .rx-free-item { box-shadow: inset 0 1px 0 var(--hair); }
+.rx-free-text { display: grid; flex: 1 1 9rem; min-width: 0; overflow-wrap: anywhere; }
+.rx-free-text b { font-weight: 600; line-height: 1.3; }
+.rx-free-text span { font-size: .875rem; color: var(--ice-2); }
+.rx-add { flex: none; min-height: 44px; min-width: 44px; padding: .4rem 1rem; border-radius: 12px; font-size: .9375rem; }
+.rx-add.is-saving { opacity: .7; cursor: progress; }
+.rx-sheet .rx-add.is-done { opacity: 1; cursor: default; transform: none; color: #3D4639; background: rgba(78, 90, 74, .12); box-shadow: none; }
+.rx-add.is-done::before {
+  content: ""; flex: none; width: .7em; height: .38em; margin-top: -.2em;
+  border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg);
+}
+.rx-free-err { flex: 1 1 100%; }
+
+.rx-act { display: grid; gap: .5rem; }
+.rx-act .btn { width: 100%; }
+.rx-ok {
+  padding: .85rem 1rem; border-radius: 14px; background: rgba(78, 90, 74, .12);
+  color: #3D4639; font-weight: 600; overflow-wrap: anywhere;
+}
+.rx-ok:focus { outline: none; }
+.rx-ok:focus-visible { outline: 3px solid var(--line-blue); }
+.rx-sent { font-size: .875rem; color: #5E5038; }
+
+/* ========== Доступность и режимы ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-hero:active, .rx-pick:active, .rx-alt:active { transform: none; }
+  .rx-res { animation: fadein 180ms ease both; }
+  .rx-row.is-sending .rx-thumb-wrap::after { animation: none; background: #D9C69E; opacity: .8; }
+  .rx-box, .rx-bottle, .rx-opt, .rx-free { transition: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .rx-foot { background: var(--raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .rx-hero, .rx-bottle, .rx-opt, .rx-tray, .rx-panel, .rx-mine-note, .rx-alt, .rx-free { outline: 2px solid var(--ice); outline-offset: -2px; }
+  .rx-free[aria-busy="true"] { opacity: 1; }
+  .rx-hero-sub { color: #FFFFFF; }
+  .rx-box { border-width: 3px; border-color: #FFFFFF; }
+  .rx-foot { background: var(--raised); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 -2px 0 var(--ice); }
+}
+@media (forced-colors: active) {
+  .rx-box, .rx-stage.has-sel .rx-box.is-on { border-color: Highlight; }
+  .rx-opt:has(input:checked), .rx-bottle.is-on { outline: 3px solid Highlight; }
+}
+
+/* Предположения отделены от прямой выдачи и требуют явного выбора. */
+.rx-suggestions { margin-top: 20px; padding-top: 16px; border-top: 1px solid #c8cec5; }
+.rx-suggestions h3 { font-size: 1.1rem; margin: 0 0 8px; }
+.rx-suggestions .btn { display: block; width: 100%; text-align: left; white-space: normal; margin-top: 10px; min-height: 48px; }
+
+/* Добавление занимает первую строку коллекции; длинное имя не вытесняет маркер. */
+.rx-mine-list { --collection-row-height: 4.75rem; }
+.rx-mine-list > .item, .rx-mine-list .rx-hero {
+  height: var(--collection-row-height); box-sizing: border-box;
+  padding: .75rem 1rem;
+}
+.rx-mine-list > .item { display: flex; align-items: center; }
+.rx-mine-list .item-head { flex-wrap: nowrap; width: 100%; min-width: 0; }
+.rx-mine-list .item-name { flex: 1; min-width: 0; }
+.rx-mine-name, .rx-mine-list .item-meta {
+  display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rx-mine-list .rx-hero { margin: 0; border-radius: 0; box-shadow: none; gap: .75rem; }
+.rx-mine-list .rx-hero:focus-visible { outline-offset: -3px; border-radius: 0; }
+.rx-mine-list .rx-hero-icon { width: 1.5rem; height: 1.5rem; background: none; box-shadow: none; }
+.rx-mine-list .rx-hero-icon svg { width: 1.5rem; height: 1.5rem; }
+.rx-mine-list .rx-hero-title { font-size: 1rem; }
+.rx-mine-list .rx-hero-state { margin: 0; padding: 0; background: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Пустой демонстрационный блок не дублирует приглашение добавить первый аромат. */
+#collection-body:has([data-testid="collection-empty"]),
+.rx-divider:has(+ #collection-body [data-testid="collection-empty"]) { display: none; }
+
+/* ========== Серийная съёмка: камера на весь экран, до 10 кадров подряд ========== */
+
+.rx-foot .rx-bulk + .rx-send { margin-top: .5rem; }
+dialog.rx-cam {
+  position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none;
+  margin: 0; padding: 0; border: 0; background: #0E0F10; color: #FAFAF7; overflow: hidden;
+}
+dialog.rx-cam::backdrop { background: #0E0F10; }
+.rx-cam-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #0E0F10; }
+.rx-cam-flash { position: absolute; inset: 0; background: #FFFFFF; opacity: 0; pointer-events: none; }
+.rx-cam-top {
+  position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: max(.9rem, env(safe-area-inset-top, 0px)) 16px .9rem;
+  background: linear-gradient(rgba(14, 15, 16, .72), rgba(14, 15, 16, 0));
+}
+.rx-cam-count { font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.rx-cam-done {
+  min-height: 44px; padding: 0 1.1rem; border: 0; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 1rem; font-weight: 650; color: #1F2124; background: #FAFAF7;
+  -webkit-tap-highlight-color: transparent;
+}
+.rx-cam-msg {
+  position: absolute; left: 16px; right: 16px; top: calc(max(.9rem, env(safe-area-inset-top, 0px)) + 3.4rem);
+  margin: 0; padding: .6rem .8rem; border-radius: 14px; font-size: .9375rem; line-height: 1.35;
+  background: rgba(14, 15, 16, .6); text-align: center;
+}
+.rx-cam-msg:empty { display: none; }
+.rx-cam-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: .9rem;
+  padding: 1.2rem 16px max(1.4rem, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(rgba(14, 15, 16, 0), rgba(14, 15, 16, .78));
+}
+.rx-cam-strip {
+  display: flex; gap: .4rem; max-width: 100%; min-height: 44px; margin: 0; padding: 0; list-style: none;
+  overflow-x: auto; scrollbar-width: none;
+}
+.rx-cam-strip::-webkit-scrollbar { display: none; }
+.rx-cam-strip img {
+  display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover;
+  box-shadow: 0 0 0 1.5px rgba(250, 250, 247, .85);
+}
+.rx-shutter {
+  width: 76px; height: 76px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 4px solid #FAFAF7; background: #FAFAF7; box-shadow: inset 0 0 0 4px #0E0F10;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform 90ms ease-out, opacity 120ms;
+}
+.rx-shutter:active { transform: scale(.92); }
+.rx-shutter.is-off { opacity: .4; }
+.rx-shutter:focus-visible, .rx-cam-done:focus-visible { outline: 3px solid #FAFAF7; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .rx-shutter { transition: none; } }

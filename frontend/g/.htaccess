@@ -1,0 +1,14 @@
+# Публичные страницы НОТА: готовые файлы, генерирует сервер при публикации группы.
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /g/404.html
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex"
+  Header set X-Content-Type-Options "nosniff"
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.jpg$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

@@ -1,0 +1,22 @@
+#music-toggle{margin-left:auto;flex:0 0 44px;width:44px;height:44px;padding:0;font-size:25px;line-height:1;display:grid;place-items:center;color:#4e5a4a}
+#music-toggle[data-playing="true"]{background:#4e5a4a;color:#fff}
+#music-toggle + #more-btn{margin-left:0}
+/* Компактная капсула под значком: название, переключение и пауза */
+#music-panel{position:fixed;z-index:45;top:calc(env(safe-area-inset-top,0px) + 66px);right:max(12px,calc((100vw - 560px)/2 + 12px));width:min(292px,calc(100vw - 24px));height:60px;box-sizing:border-box;display:flex;align-items:center;gap:2px;padding:0 6px 0 16px;border:1px solid #fff;border-radius:30px;background:rgba(247,248,244,.97);color:#232724;box-shadow:0 10px 36px #222b2333;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);overflow:hidden}
+#music-panel[hidden]{display:none}
+.music-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.music-info b,.music-info small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#music-title{font-size:14px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+#music-artist{font-size:11px;color:#666d62;line-height:1.2}
+.music-control{flex:0 0 auto;border:0;background:transparent;color:#4e5a4a;width:40px;height:44px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0}
+.music-control:active{background:#e0e5dc;transform:scale(.94)}
+.music-control svg{width:17px;height:17px;fill:currentColor}
+#music-play{width:44px;height:44px;background:#4e5a4a;color:#fff}
+#music-play svg{width:19px;height:19px}
+#music-play .music-pause,#music-play[data-playing=true] .music-start{display:none}
+#music-play[data-playing=true] .music-pause{display:block}
+.music-line{position:absolute;left:18px;right:18px;bottom:6px;height:2px;border-radius:2px;background:#dfe3da;overflow:hidden}
+.music-line i{display:block;height:100%;width:100%;background:#4e5a4a;transform-origin:left;transform:scaleX(0)}
+#music-status{position:absolute;left:16px;right:16px;bottom:-1px;margin:0;font-size:10px;line-height:1.2;color:#755637;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#music-status:empty{display:none}
+@media(prefers-reduced-transparency:reduce){#music-panel{background:#f7f8f4;backdrop-filter:none;-webkit-backdrop-filter:none}}

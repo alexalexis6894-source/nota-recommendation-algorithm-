@@ -1,0 +1,46 @@
+/* Подпись «by Staytech» для всех сайтов студии (утверждена 3 октября 2026).
+   Строчное «by» шрифтом Arimo 400 чёрным и сразу за ним белый логотип из исходного файла, вся подпись ведёт на https://staytech.ru/.
+   Файлы arimo-by.woff2, staytech-transparent.png (логотип без фона) и staytech-transparent-dark.png (он же для тёмного фона) положить рядом с этим CSS. Цвета ссылки берутся из переменных сайта, если они есть. */
+@font-face{font-family:'Arimo by';font-style:normal;font-weight:400;font-display:swap;src:url(arimo-by.woff2) format('woff2');unicode-range:U+62,U+79}
+/* --h: высота окна логотипа. 40 px на компьютере, 20 px на телефоне, 17 px на экранах 360-371 px */
+.st-co{--h:40px;--st-accent:var(--wine,#68283e);position:relative;flex:none;display:inline-flex;align-items:baseline;gap:8px;min-height:44px;padding:4px 8px;border-radius:12px;color:#151515;line-height:1.2;text-decoration:none}
+/* «by»: кегль в 1,5 раза меньше шрифта логотипа (надпись Staytech набрана кеглем 0.909h, делим на 1,5 = 0.606h).
+   У окна логотипа нет текста, во flex его базовая линия считается по нижнему краю; надпись стоит на 0.741h от верха окна,
+   поэтому «by» поднято на 0.259h и стоит на той же линии */
+.st-co-by{position:relative;top:calc(var(--h)*-.259);font:400 calc(var(--h)*.606)/1 'Arimo by',Arimo,Arial,sans-serif;color:#151515;white-space:nowrap}
+/* Логотип: прозрачная версия исходника (staytech-transparent.png, пиксели x 82-936, y 432-639 оригинала), без белого квадрата.
+   Окно показывает ту же полосу x 75-944, y 425-645 исходника, поэтому вид совпадает с прежним, но фон сайта виден насквозь */
+.st-co-logo{position:relative;display:block;flex:none;width:calc(var(--h)*3.95);height:var(--h);overflow:hidden;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.st-co-logo img{position:absolute;left:calc(var(--h)*.0318);top:calc(var(--h)*.0318);width:calc(var(--h)*3.8864);height:auto;max-width:none}
+/* Тёмный фон: класс st-co--dark. Светлое «by» и светлая прозрачная версия логотипа staytech-transparent-dark.png
+   (из фирменного графитового файла staytech-telegram-graphite.png, фон вырезан, геометрия подогнана под светлую версию:
+   та же высота букв и та же базовая линия, холст 900x208). Вторая картинка в разметке грузится только когда видна (loading=lazy) */
+.st-co-logo .st-co-img-dark{display:none;width:calc(var(--h)*4.0909)}
+.st-co--dark{color:#f4f4f5}
+.st-co--dark .st-co-by{color:#f4f4f5}
+.st-co--dark .st-co-arrow{color:rgba(255,255,255,.75)}
+.st-co--dark .st-co-logo{width:calc(var(--h)*4.09)}
+.st-co--dark .st-co-logo .st-co-img-light{display:none}
+.st-co--dark .st-co-logo .st-co-img-dark{display:block}
+.st-co--dark .st-co-logo::after{background:linear-gradient(var(--st-accent),var(--st-accent)) 0 0/0 100% no-repeat,rgba(255,255,255,.22)}
+.st-co--dark:hover .st-co-logo::after,.st-co--dark:focus-visible .st-co-logo::after{background-size:100% 100%,auto}
+/* Подчёркивание: в покое тонкое, при наведении растекается цветом сайта слева направо */
+.st-co-logo::after{content:'';position:absolute;left:4%;right:4%;bottom:0;height:2px;background:linear-gradient(var(--st-accent),var(--st-accent)) 0 0/0 100% no-repeat,#e6e1e3;transition:background-size .35s ease}
+.st-co-arrow{flex:none;align-self:center;width:16px;height:16px;margin-left:-2px;color:var(--st-accent);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.st-co:hover .st-co-logo,.st-co:focus-visible .st-co-logo{transform:translateY(-2px) scale(1.05)}
+.st-co:hover .st-co-logo::after,.st-co:focus-visible .st-co-logo::after{background-size:100% 100%,auto}
+.st-co:hover .st-co-arrow,.st-co:focus-visible .st-co-arrow{transform:translate(3px,-3px)}
+.st-co:focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
+.st-co .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+/* Телефон: компактно, стрелка в правом верхнем углу поверх отступа и ширину строки не занимает */
+@media(max-width:700px){
+.st-co{--h:20px;gap:4px;min-width:44px;padding:0 9px 0 2px;border-radius:8px}
+.st-co-arrow{position:absolute;right:0;top:9px;width:10px;height:10px;margin:0}
+.st-co:active .st-co-logo{transform:translateY(-1px) scale(1.05)}
+.st-co:active .st-co-logo::after{background-size:100% 100%,auto}
+}
+@media(max-width:371px){.st-co{--h:17px}}
+@media(prefers-reduced-motion:reduce){
+.st-co-logo,.st-co-logo::after,.st-co-arrow{transition:none}
+.st-co:hover .st-co-logo,.st-co:focus-visible .st-co-logo,.st-co:active .st-co-logo,.st-co:hover .st-co-arrow,.st-co:focus-visible .st-co-arrow{transform:none}
+}

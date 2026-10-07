@@ -1,0 +1,15 @@
+.env
+*.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+# секреты и данные людей с продакшена
+phone-config.json
+telegram.json
+photos.sqlite
+events.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log

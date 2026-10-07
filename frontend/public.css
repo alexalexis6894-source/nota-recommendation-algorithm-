@@ -1,0 +1,18 @@
+/* Публичная страница группы. Стиль Air из app.css и groups.css, здесь только раскладка. */
+.pg-main { padding-bottom: calc(2.5rem + var(--safe-b)); }
+.pg-kicker { font-size: .875rem; font-weight: 600; color: var(--ice-2); }
+.pg-title { margin-top: .35rem; overflow-wrap: anywhere; }
+.pg-lead { margin-top: .75rem; }
+.pg-notes { margin-top: .9rem; }
+.pg-block { margin-top: 1.5rem; }
+.pg-block h2, .pg-cta h2 { font-size: 1.125rem; }
+.pg-items { list-style: none; margin: .75rem 0 0; padding: .35rem 1.1rem; background: #fff; border-radius: 20px; }
+.pg-item { display: grid; gap: .1rem; padding: .7rem 0; overflow-wrap: anywhere; }
+.pg-item + .pg-item { border-top: 1px solid rgba(0, 0, 0, .06); }
+.pg-item strong { font-size: 1rem; line-height: 1.35; }
+.pg-item span { font-size: .875rem; }
+.pg-grid { list-style: none; padding: 0; margin: .75rem 0 0; }
+.pg-tile { min-height: 0; }
+.pg-cta { margin-top: 1.75rem; padding: 1.25rem 1.1rem; border-radius: 20px; background: var(--raised); }
+.pg-cta p { margin-top: .35rem; }
+.pg-go { width: 100%; margin-top: 1rem; }

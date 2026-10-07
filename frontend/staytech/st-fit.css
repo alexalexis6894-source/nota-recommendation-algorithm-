@@ -1,0 +1,14 @@
+/* Посадка подписи «by Staytech» в шапки НОТА. Классы st-co не меняются, здесь только обёртки. */
+.st-pair{display:inline-flex;align-items:center;flex:none;flex-wrap:nowrap;gap:6px 12px;max-width:100%}
+.st-pair>:first-child{flex:none}
+/* Тонкая верхняя строка для страниц без шапки */
+.st-topline{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:6px max(16px,4vw);min-height:56px;box-sizing:border-box;font:600 13px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:.14em;color:#151515}
+.st-topline-brand{margin-right:auto}
+/* Логотип только без фона (staytech-transparent.png): никаких плашек и подложек, фон страницы виден насквозь.
+   Сброс защищает подпись от общих правил шапок вида .top a {...}: возвращает отступы и вид из набора by-signature */
+.st-pair .st-co,.st-topline .st-co{display:inline-flex;align-items:baseline;flex:none;box-sizing:border-box;width:auto;margin:0;border:0;padding:4px 8px;border-radius:12px;background:none;box-shadow:none;min-height:44px;font-size:16px;letter-spacing:0;text-transform:none;text-decoration:none}
+@media(max-width:700px){
+.st-pair{gap:4px 6px}
+.st-pair .st-co,.st-topline .st-co{padding:0 9px 0 2px;border-radius:8px}
+.st-topline{min-height:44px;padding:4px 16px;font-size:12px}
+}

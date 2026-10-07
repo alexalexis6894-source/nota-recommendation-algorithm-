@@ -1,0 +1,242 @@
+/* Группы и пробники в палитре Air. Метки одного аккорда имеют один цвет. */
+.ng-next { margin-top: 1.25rem; }
+.ng-next p { margin-top: .6rem; font-size: .875rem; }
+.ng-create, .ng-heading { margin-top: 1.25rem; }
+.ng-group, .ng-source, .ng-recommendation, .ng-sample {
+  display: block; width: 100%; border: 0; border-radius: 20px; padding: 1.1rem;
+  margin-top: 1rem; background: #fff; text-align: left; color: var(--ice); box-sizing: border-box;
+}
+.ng-group { cursor: pointer; font: inherit; }
+.ng-group:active { background: #e8ece4; }
+.ng-group h2, .ng-source h2 { font-size: 1.125rem; margin-bottom: .5rem; }
+.ng-group p { font-size: .875rem; overflow-wrap: anywhere; }
+.ng-link { display: block; margin-top: .8rem; font-weight: 600; color: #4b5747; }
+.ng-tags { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; }
+.ng-tag { border: 1px solid rgba(0,0,0,.08); border-radius: 999px; padding: .35rem .65rem; font-size: .8125rem; line-height: 1.35; color: #34362e; }
+.tone-0 { background: #eadfcc; }.tone-1 { background: #e2e7d4; }.tone-2 { background: #ead9d3; }
+.tone-3 { background: #e3ddec; }.tone-4 { background: #d8e5e2; }.tone-5 { background: #eee7cc; }
+.ng-perfume { display: grid; gap: .15rem; min-width: 0; overflow-wrap: anywhere; }
+.ng-perfume strong { font-size: 1rem; line-height: 1.35; }
+.ng-perfume span { font-size: .875rem; }
+.ng-source .ng-perfume + .ng-perfume, #sample-preview-body .ng-perfume + .ng-perfume { margin-top: .8rem; }
+.ng-caption { font-size: .8125rem; color: var(--ice-2); line-height: 1.5; margin-top: .75rem; }
+.ng-recommendation .btn { width: 100%; margin-top: .85rem; }
+.ng-empty { padding: 1.5rem 0; color: var(--ice-2); }
+.ng-wide, .ng-save { width: 100%; margin-top: 1rem; }
+.ng-member { display: flex; align-items: center; gap: .75rem; background: #fff; border-radius: 14px; padding: .85rem; margin-top: .65rem; cursor: pointer; }
+.ng-member input { flex: none; width: 22px; height: 22px; accent-color: #4b5747; }
+#group-members { margin-bottom: 1.25rem; }
+.ng-name-option { border: 1px solid #bdc5b6; background: transparent; color: #394733; border-radius: 999px; min-height: 44px; padding: .4rem .8rem; font: inherit; cursor: pointer; }
+.ng-notice { position: fixed; bottom: calc(5rem + env(safe-area-inset-bottom)); left: 1rem; right: 1rem; max-width: 480px; margin: auto; z-index: 20; border-radius: 16px; padding: .9rem; background: #384632; color: white; box-shadow: 0 4px 20px #0002; }
+#group-detail > .text-btn { min-height: 44px; }
+.ng-mode { margin-top: .75rem; }
+.ng-mode + .muted { margin-top: .75rem; }
+.ng-diff { color: var(--ice); }
+#group-editor .sheet-body, #sample-preview .sheet-body { padding-bottom: max(1.5rem,env(safe-area-inset-bottom)); }
+.ng-group:focus-visible, .ng-name-option:focus-visible { outline: 3px solid #77846e; outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) { .ng-group { transition: background 120ms; } }
+
+#group-editor .ng-save { position: sticky; bottom: 0; box-shadow: 0 0 0 8px var(--raised); }
+
+/* Заголовки обозначают экран, а не интерактивный элемент. */
+.view-title:focus, #rx-mine-title:focus { outline: none; border-radius: 0; }
+
+/* Цена отливанта, итог и форма заявки */
+.ng-price { margin-top: .75rem; font-size: .9375rem; font-weight: 650; color: var(--ice); }
+.ng-price.is-out { font-weight: 500; color: var(--ice-2); }
+.ng-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 1rem; padding-top: .85rem; border-top: 1px solid rgba(0,0,0,.08); font-size: 1.0625rem; }
+.ng-total b { font-size: 1.25rem; }
+.ng-line { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+.ng-line + .ng-line { margin-top: .8rem; }
+.ng-line-price { flex: none; font-weight: 600; white-space: nowrap; }
+.ng-order { margin-top: 1.25rem; }
+.ng-order .field { width: 100%; box-sizing: border-box; font-size: max(16px, 1rem); margin-bottom: 1rem; }
+.ng-consent { display: flex; gap: .65rem; align-items: flex-start; font-size: .875rem; line-height: 1.45; color: var(--ice-2); cursor: pointer; }
+.ng-consent input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: #4b5747; }
+.ng-order .rx-err:not(:empty) { margin-top: .75rem; }
+.ng-done { font-size: 1.25rem; margin-bottom: .5rem; }
+.ng-consent a { color: #4b5747; font-weight: 600; }
+
+/* Экран группы, фаза 0: компактная шапка (~250px вместо 847px) и сетка 2 колонки.
+   Палитра и шрифт прежние, меняется только раскладка. */
+#group-detail { margin-top: -.5rem; }
+.ng-bar { display: flex; align-items: center; gap: .35rem; min-height: 44px; }
+.ng-bar .ng-back { flex: none; min-width: 44px; padding: 0; font-size: 1.375rem; color: var(--ice); }
+.ng-title { flex: 1; min-width: 0; font-size: 1.375rem; line-height: 1.2; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-icon {
+  flex: none; min-width: 44px; min-height: 44px; padding: 0 .75rem; border: 0; border-radius: 12px;
+  background: rgba(31,33,36,.05); font-size: .9375rem; font-weight: 600; color: var(--ice); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.ng-icon:active { transform: scale(.97); }
+.ng-share-btn { color: #4b5747; }
+.ng-notes { display: flex; gap: .45rem; margin-top: .4rem; overflow: hidden; }
+#group-detail .ng-mode { margin-top: .5rem; }
+.ng-notes .ng-tag { flex: none; white-space: nowrap; }
+.ng-count { margin-top: .4rem; font-size: .8125rem; color: var(--ice-2); }
+.ng-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; margin-top: .45rem; }
+.ng-tile { display: flex; flex-direction: column; min-width: 0; min-height: 188px; padding: .7rem; border-radius: 20px; background: #fff; color: var(--ice); }
+.ng-tile-open { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ng-strip { display: flex; gap: 2px; height: 26px; border-radius: 10px; overflow: hidden; background: var(--raised); }
+.ng-strip i { display: block; min-width: 8px; }
+.ng-tile-name {
+  margin-top: .55rem; font-size: .9375rem; line-height: 1.3; font-weight: 650; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.ng-tile-brand { margin-top: .1rem; font-size: .8125rem; color: var(--ice-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-tile-meta { margin-top: auto; padding-top: .3rem; font-size: .8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-tile .btn { width: 100%; min-height: 44px; margin-top: .45rem; padding: .35rem .5rem; font-size: .9375rem; }
+.ng-tile.is-out { opacity: .65; }
+.ng-tile-open:focus-visible { outline: 3px solid #77846e; outline-offset: 4px; border-radius: 12px; }
+.ng-skeleton { min-height: 188px; background: linear-gradient(180deg, #fff, #f6f7f5); }
+.ng-more { width: 100%; margin-top: 1rem; }
+.ng-foot { margin-top: 1rem; }
+#rec-body .ng-strip { height: 36px; }
+#rec-body .ng-diff { font-size: .9375rem; }
+#rec-body h3 { margin-top: .25rem; }
+#menu-body, #share-body { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+#menu-body .btn + .btn { margin-top: 0; }
+
+/* Мини-набор над вкладками */
+.ng-kitbar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 19; width: 100%; max-width: 34rem;
+  bottom: calc(var(--tabs-h) + var(--safe-b) + .4rem); padding: 0 var(--pad); box-sizing: border-box;
+}
+.ng-kitbar button {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; min-height: 48px;
+  padding: .5rem 1rem; border: 0; border-radius: 16px; background: var(--selected); color: #fff;
+  font: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px -12px rgba(31,33,36,.5);
+}
+.ng-kitbar button:active { transform: scale(.98); }
+.has-kitbar main { padding-bottom: calc(var(--tabs-h) + var(--safe-b) + 5.5rem); }
+.has-kitbar .ng-notice { bottom: calc(9rem + env(safe-area-inset-bottom)); }
+
+/* Лист «Поделиться»: превью сторис 9:16 и ссылка на группу */
+.ng-story { display: grid; justify-items: center; gap: .5rem; }
+.ng-story img { display: block; width: auto; height: min(52vh, 26rem); max-width: 100%; aspect-ratio: 9 / 16; border-radius: 16px; box-shadow: 0 0 0 1px var(--hair); background: #F1F2EF; }
+.ng-share-actions { display: grid; gap: .6rem; }
+.ng-share-actions .btn { width: 100%; }
+.ng-link-box { padding: 1rem; border-radius: 16px; background: #fff; }
+.ng-link-title { font-weight: 650; }
+.ng-link-url { margin-top: .35rem; font-weight: 600; color: #4b5747; overflow-wrap: anywhere; }
+.ng-link-box .btn { margin-top: .75rem; }
+
+/* Крупный текст: сетка становится списком, чтобы названия не обрезались. */
+#group-detail { container-type: inline-size; }
+@container (max-width: 19rem) { .ng-grid { grid-template-columns: minmax(0, 1fr); } .ng-tile { min-height: 0; } }
+
+/* Приоритет ароматов в группе: медали 1-3, дальше просто номер. Строку тянут за ручку справа. */
+.ng-medal {
+  flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  font-size: .8125rem; font-weight: 700; line-height: 1; color: var(--ice-2);
+}
+.ng-medal.is-1 { background: linear-gradient(145deg, #F1DE9C, #D6B45A); color: #4A3A10; box-shadow: inset 0 0 0 1px rgba(120,90,20,.25); }
+.ng-medal.is-2 { background: linear-gradient(145deg, #EEF0F2, #C3C8CE); color: #3A3F45; box-shadow: inset 0 0 0 1px rgba(60,70,80,.2); }
+.ng-medal.is-3 { background: linear-gradient(145deg, #EBC7A6, #C08A5E); color: #4A2C14; box-shadow: inset 0 0 0 1px rgba(110,60,20,.25); }
+.ng-rank-hint { margin-top: -.15rem; font-size: .8125rem; line-height: 1.45; color: var(--ice-2); }
+.ng-rank { display: grid; row-gap: .4rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+.ng-rank-row {
+  display: flex; align-items: center; gap: .7rem; min-height: 56px; padding: .45rem .3rem .45rem .6rem;
+  border-radius: 14px; background: #fff; position: relative;
+}
+.ng-rank-row .ng-perfume { flex: 1; }
+.ng-rank-row .ng-perfume strong { font-size: .9375rem; }
+.ng-rank-row .ng-perfume span { font-size: .8125rem; }
+.ng-handle {
+  flex: none; width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent;
+  font-size: 1.25rem; line-height: 1; color: var(--ice-2); cursor: grab; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.ng-handle:focus-visible { outline: 3px solid #77846e; outline-offset: 1px; }
+.ng-rank-row.is-dragging { z-index: 2; background: #fff; box-shadow: 0 10px 28px -10px rgba(31,33,36,.45); }
+.ng-rank-row.is-dragging .ng-handle { cursor: grabbing; }
+
+/* Ароматы группы столбиком: на карточке группы и в шапке экрана группы. */
+.ng-lineup { display: grid; gap: .3rem; margin-top: .15rem; }
+.ng-lineup-row { display: flex; align-items: center; gap: .6rem; min-width: 0; min-height: 30px; }
+.ng-lineup-row .ng-medal { width: 24px; height: 24px; font-size: .75rem; }
+.ng-lineup-name { flex: 0 1 auto; min-width: 0; font-size: .9375rem; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-lineup-brand { flex: 1 1 0; min-width: 2.5rem; font-size: .8125rem; color: var(--ice-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-lineup-rest { padding-left: calc(24px + .6rem); font-size: .8125rem; color: var(--ice-2); }
+.ng-group .ng-lineup { margin-bottom: .1rem; }
+.ng-base { margin-top: .5rem; padding: .35rem .9rem .85rem; border-radius: 20px; background: #fff; }
+.ng-base-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; min-height: 44px;
+  padding: 0; border: 0; background: transparent; font: inherit; color: var(--ice); text-align: left;
+  font-size: .8125rem; font-weight: 650; letter-spacing: .02em; -webkit-tap-highlight-color: transparent;
+}
+button.ng-base-head { cursor: pointer; }
+.ng-order-hint { flex: none; padding: .3rem .65rem; border-radius: 999px; background: rgba(31,33,36,.05); font-size: .8125rem; font-weight: 600; color: #4b5747; }
+button.ng-base-head:active .ng-order-hint { background: rgba(31,33,36,.1); }
+.ng-lineup-toggle { display: block; width: 100%; padding: 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ng-lineup-more { display: block; margin-top: .45rem; font-size: .8125rem; font-weight: 600; color: #4b5747; }
+.ng-base-head:focus-visible, .ng-lineup-toggle:focus-visible { outline: 3px solid #77846e; outline-offset: 3px; border-radius: 12px; }
+.ng-base .ng-notes { margin-top: .65rem; }
+.ng-base .ng-tags { margin-top: .75rem; }
+.ng-base > .text-btn { margin-top: .4rem; min-height: 44px; padding-left: 0; }
+
+/* Шторка приоритета: строки белые на светлом листе, подсказка серым над ними. */
+.ng-rank-sheet .sheet-body { gap: 0; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+.ng-rank-sheet .ng-rank-hint { margin-top: 0; }
+.ng-rank-sheet .sheet-body .ng-rank { padding: 0; }
+
+/* Набор: крестик в углу карточки и последняя карточка «Добавить пробник». */
+.ng-sample { position: relative; padding-right: 3.25rem; }
+.ng-remove {
+  position: absolute; top: .45rem; right: .45rem; width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: transparent; color: var(--ice-2); font-size: 1.5rem; line-height: 1; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.ng-remove::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: rgba(31,33,36,.06); z-index: -1; }
+.ng-remove { isolation: isolate; }
+.ng-remove:active::before { background: rgba(31,33,36,.12); }
+.ng-remove:focus-visible { outline: 3px solid #77846e; outline-offset: -3px; }
+.ng-add-sample {
+  display: flex; align-items: center; justify-content: center; gap: .55rem; width: 100%; min-height: 64px; margin-top: 1rem;
+  border: 1.5px dashed #bdc5b6; border-radius: 20px; background: transparent; font: inherit; font-size: 1rem; font-weight: 600;
+  color: #4b5747; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.ng-add-sample:active { background: rgba(31,33,36,.04); }
+.ng-add-sample:focus-visible { outline: 3px solid #77846e; outline-offset: 3px; }
+.ng-add-plus { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #4b5747; color: #fff; font-size: 1.125rem; line-height: 1; }
+
+/* Наборы Стандарт (3) и Экстра (5): точки на плашке и шкала на вкладке «Пробники».
+   Места Экстра видны всегда, но блёклые, пока до них не дошли. */
+#kit-bar-text { display: inline-flex; align-items: center; gap: .6rem; min-width: 0; }
+#kit-bar-text > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-kitbar-go { flex: none; opacity: .85; }
+.ng-dots { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.ng-dots i { display: block; width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.75); }
+.ng-dots i.is-on { background: #fff; box-shadow: none; }
+.ng-dots i.is-extra { opacity: .4; }
+.ng-dots i.is-extra.is-on { opacity: 1; }
+.ng-dots i.is-gap { margin-left: 5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ng-dots i, .ng-meter-bar i { transition: background 240ms ease, opacity 240ms ease, transform 320ms var(--press, ease); }
+  .ng-dots i.is-on, .ng-meter-bar i.is-on { animation: ng-pop 360ms var(--press, ease) both; }
+}
+@keyframes ng-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.ng-meter { margin-top: 1rem; padding: 1.1rem; border-radius: 20px; background: #fff; }
+.ng-meter-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.ng-meter-head h2 { font-size: 1.125rem; line-height: 1.25; }
+.ng-meter-head b { flex: none; font-size: 1.0625rem; }
+.ng-meter-bar { display: flex; gap: 6px; margin-top: .85rem; }
+.ng-meter-bar i { flex: 1; height: 10px; border-radius: 999px; background: rgba(31,33,36,.08); }
+.ng-meter-bar i.is-on { background: #4b5747; }
+.ng-meter-bar i.is-extra { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(75,87,71,.28); }
+.ng-meter-bar i.is-extra.is-on { background: #4b5747; box-shadow: none; }
+.ng-meter-bar.is-standard i.is-extra:not(.is-on) { box-shadow: inset 0 0 0 1.5px rgba(75,87,71,.55); }
+.ng-meter-bar i.is-gap { margin-left: 8px; }
+.ng-meter-labels { display: grid; grid-template-columns: 3fr 2fr; column-gap: 14px; margin-top: .4rem; font-size: .75rem; font-weight: 600; color: var(--ice-2); opacity: .7; }
+.ng-meter-labels span:last-child { color: rgba(75,87,71,.75); }
+.ng-meter-labels .is-current { color: var(--ice); opacity: 1; }
+.ng-meter-hint { margin-top: .7rem; font-size: .8125rem; line-height: 1.45; color: var(--ice-2); }
+
+/* Бонусы и условие заявки под итогом набора. */
+.ng-meter-done { margin-bottom: .55rem; font-size: .8125rem; font-weight: 600; color: #4b5747; }
+.ng-sum-line { margin-top: .6rem; font-size: .9375rem; color: var(--ice-2); }
+.ng-sum-line + .ng-total { margin-top: .6rem; }
+.ng-bonus { margin-top: .6rem; padding: .6rem .8rem; border-radius: 12px; background: #e2e7d4; font-size: .875rem; line-height: 1.4; color: #34402f; font-weight: 600; }
+.ng-need { margin-top: .85rem; font-size: .875rem; line-height: 1.45; color: var(--ice-2); }
+.ng-need + .btn { margin-top: .6rem; }
