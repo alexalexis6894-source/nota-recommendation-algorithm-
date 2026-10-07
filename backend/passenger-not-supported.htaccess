@@ -1,0 +1,6 @@
+Options -Indexes
+PassengerEnabled on
+PassengerAppRoot /var/www/u3644424/data/.nota-recognition
+PassengerPython /var/www/u3644424/data/.nota-recognition/venv/bin/python
+PassengerBaseURI /articles/nota-api
+PassengerFriendlyErrorPages off
