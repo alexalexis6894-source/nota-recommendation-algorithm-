@@ -30,4 +30,11 @@ python3 -m http.server 8000
 
 Без бэкенда работает демо-подбор на встроенных ароматах. Распознавание по фото требует бэкенд и обработчик на Mac.
 
-Бэкенд: см. `backend/README.md`.
+Подбор на полном каталоге, без сервера (проверено, около 3 с на запрос):
+
+```sh
+cd backend
+python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
+python ../research/quickstart.py "Eau Sauvage" Dior --mode close --limit 10
+python ../research/quickstart.py "Eau Sauvage" Dior --mode new --limit 10
+```
