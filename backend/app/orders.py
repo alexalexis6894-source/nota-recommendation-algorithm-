@@ -73,6 +73,8 @@ def add_bonus_columns(db):
     """Бонусы появились позже таблицы заявок: старые базы получают колонки с нулями.
     Вызывают и сайт, и фоновый опрос Telegram, кто бы ни открыл базу первым."""
     columns = {row[1] for row in db.execute('PRAGMA table_info(orders)')}
+    if columns and 'paid_at' not in columns:
+        db.execute('ALTER TABLE orders ADD COLUMN paid_at REAL')
     for column in ('bonus_earned', 'bonus_spent'):
         if columns and column not in columns:
             db.execute(f'ALTER TABLE orders ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0')

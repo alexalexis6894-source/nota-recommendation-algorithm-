@@ -13,3 +13,7 @@ events.sqlite
 *.sqlite-wal
 *.sqlite-shm
 *.log
+
+# Конфигурация второго бота и блокировки опроса
+supplier-telegram.json
+*.lock
