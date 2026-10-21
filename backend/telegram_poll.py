@@ -11,6 +11,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 sys.path.insert(0, str(root))
 os.environ.setdefault('NOTA_TELEGRAM_CONFIG', str(root/'telegram.json'))
+os.environ.setdefault('NOTA_SUPPLIER_TELEGRAM_CONFIG', str(root/'supplier-telegram.json'))
 from app import telegram
 
 
@@ -20,5 +21,10 @@ def connect():
     return db
 
 
-if (root/'data/photos.sqlite').exists():
-    telegram.poll(connect, seconds=55, lock_path=root/'telegram-poll.lock')
+if __name__ == '__main__' and (root/'data/photos.sqlite').exists():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--role', choices=['manager', 'supplier'], default='manager')
+    args = parser.parse_args()
+    lock_name = 'telegram-poll.lock' if args.role == 'manager' else 'telegram-supplier-poll.lock'
+    telegram.poll(connect, seconds=55, lock_path=root/lock_name, role=args.role)

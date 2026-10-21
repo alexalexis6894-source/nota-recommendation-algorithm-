@@ -15,7 +15,8 @@ if secret.exists():
 os.environ['NOTA_VISION_PROVIDER']='disabled'
 os.environ['NOTA_PHONE_CONFIG']=str(root/'phone-config.json')
 # Настройки Telegram-бота заявок лежат рядом, вне пакета публикации.
-os.environ['NOTA_TELEGRAM_CONFIG']=str(root/'telegram.json')
+os.environ.setdefault('NOTA_TELEGRAM_CONFIG',str(root/'telegram.json'))
+os.environ.setdefault('NOTA_SUPPLIER_TELEGRAM_CONFIG',str(root/'supplier-telegram.json'))
 # Публичные страницы групп: готовые файлы на nota.staytech.ru/g/<slug>/.
 os.environ['NOTA_PUBLIC_DIR']='/var/www/u3644424/data/www/nota.staytech.ru'
 os.environ['NOTA_PUBLIC_URL']='https://nota.staytech.ru'

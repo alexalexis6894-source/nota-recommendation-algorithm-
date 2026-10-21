@@ -46,12 +46,15 @@ MAX_ITEMS_IN_MESSAGE = 30
 
 STATUSES = {
     'new': 'Новая',
+    'paid': 'Оплачен',
     'in_work': 'В работе',
     'contacted': 'Связались',
     'done': 'Выполнен',
     'cancelled': 'Отменён',
 }
 BUTTONS = [
+    ('paid', 'Оплатил'),
+    ('supplier', 'Проверить состав'),
     ('in_work', 'Взял в работу'),
     ('contacted', 'Связались'),
     ('done', 'Выполнен'),
@@ -62,6 +65,11 @@ CALLBACK_RE = re.compile(r'^st:(\d{1,9}):([a-z_]{1,20})$')
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS telegram_chats(
   chat_id INTEGER PRIMARY KEY, user_id INTEGER, title TEXT, added_at REAL);
+CREATE TABLE IF NOT EXISTS supplier_chats(
+  chat_id INTEGER PRIMARY KEY, user_id INTEGER, title TEXT, added_at REAL);
+CREATE TABLE IF NOT EXISTS telegram_bot_updates(
+  role TEXT NOT NULL, update_id INTEGER NOT NULL, received_at REAL NOT NULL,
+  PRIMARY KEY(role, update_id));
 CREATE TABLE IF NOT EXISTS telegram_outbox(
   order_id TEXT PRIMARY KEY, attempts INTEGER NOT NULL DEFAULT 0, last_try REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS telegram_updates(
@@ -85,6 +93,7 @@ class Config:
     bot_username: str = ''
     chat_ids: list = field(default_factory=list)
     allowed_user_ids: set = field(default_factory=set)
+    role: str = 'manager'
 
 
 def _int_list(value):
@@ -97,9 +106,9 @@ def _int_list(value):
     return result
 
 
-def load_config():
+def load_config(role="manager"):
     """Читает конфиг по пути из NOTA_TELEGRAM_CONFIG. Нет файла или токена: None (бот выключен)."""
-    path = os.environ.get('NOTA_TELEGRAM_CONFIG')
+    path = os.environ.get('NOTA_SUPPLIER_TELEGRAM_CONFIG' if role == 'supplier' else 'NOTA_TELEGRAM_CONFIG')
     if not path:
         return None
     file = Path(path)
@@ -126,6 +135,7 @@ def load_config():
         return None
     return Config(
         bot_token=token,
+        role=role,
         webhook_secret=str(data.get('webhook_secret') or ''),
         pairing_code=str(data.get('pairing_code') or ''),
         bot_username=str(data.get('bot_username') or '').lstrip('@'),
@@ -186,18 +196,27 @@ def _call(cfg, method, payload):
 
 def init_db(db):
     db.executescript(SCHEMA)
+    from . import supplier
+    supplier.init_db(db)
     # Колонки бонусов, как в orders.add_bonus_columns: опрос может открыть базу раньше сайта.
     # Свой код, а не импорт orders, чтобы ежеминутный опрос не загружал fastapi.
     columns = {row[1] for row in db.execute('PRAGMA table_info(orders)')}
+    if columns and 'paid_at' not in columns:
+        db.execute('ALTER TABLE orders ADD COLUMN paid_at REAL')
+    db.execute("INSERT OR IGNORE INTO telegram_bot_updates SELECT 'manager',update_id,received_at FROM telegram_updates")
     for column in ('bonus_earned', 'bonus_spent'):
         if columns and column not in columns:
             db.execute(f'ALTER TABLE orders ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0')
 
 
+def _chat_table(cfg):
+    return "supplier_chats" if cfg.role == "supplier" else "telegram_chats"
+
+
 def _bound_chats(db, cfg):
     """Чаты для заявок: из конфига плюс привязанные командой /start."""
     found = list(cfg.chat_ids)
-    for (chat_id,) in db.execute('SELECT chat_id FROM telegram_chats ORDER BY added_at'):
+    for (chat_id,) in db.execute(f'SELECT chat_id FROM {_chat_table(cfg)} ORDER BY added_at'):
         if chat_id not in found:
             found.append(chat_id)
     return found
@@ -207,17 +226,19 @@ def _load_order(db, order_id=None, number=None):
     column, value = ('id', order_id) if order_id is not None else ('number', number)
     row = db.execute(
         f'SELECT id, number, phone, name, comment, total, status, created_at, notified_at, '
-        f'bonus_earned, bonus_spent FROM orders WHERE {column}=?', (value,)).fetchone()
+        f'bonus_earned, bonus_spent, paid_at FROM orders WHERE {column}=?', (value,)).fetchone()
     if not row:
         return None
     order = dict(zip(('id', 'number', 'phone', 'name', 'comment', 'total', 'status',
-                      'created_at', 'notified_at', 'bonus_earned', 'bonus_spent'), row))
+                      'created_at', 'notified_at', 'bonus_earned', 'bonus_spent', 'paid_at'), row))
     order['items'] = [
         dict(zip(('brand', 'name', 'volume_ml', 'price', 'group_name'), item))
         for item in db.execute(
             'SELECT brand, name, volume_ml, price, group_name FROM order_items '
             'WHERE order_id=? ORDER BY rowid', (order['id'],))
     ]
+    from .supplier import current_check
+    order['supplier_check'] = current_check(db, order['id'])
     return order
 
 
@@ -286,6 +307,8 @@ def _cut(value, limit):
 def render_order(order, link=True, actor=None):
     """HTML-текст заявки для parse_mode HTML. Все данные из базы проходят через esc()."""
     status = STATUSES.get(order.get('status'), order.get('status') or '')
+    from .supplier import check_label
+    check = check_label(order.get('supplier_check'))
     lines = [f'<b>Заявка №{esc(order["number"])}</b>',
              f'Телефон: {_phone_html(order.get("phone"), link)}']
     if order.get('name'):
@@ -316,6 +339,10 @@ def render_order(order, link=True, actor=None):
     lines += [
               f'Создана: {_moscow(order.get("created_at"))} МСК',
               f'Статус: <b>{esc(status)}</b>']
+    if order.get('paid_at'):
+        lines.append(f'Оплата отмечена: {_moscow(order["paid_at"])} МСК')
+    if check:
+        lines.append(f'Поставщик: <b>{esc(check)}</b>')
     if actor:
         lines.append(f'Изменил: {esc(_cut(actor, 60))}')
     return '\n'.join(lines)
@@ -323,9 +350,9 @@ def render_order(order, link=True, actor=None):
 
 def keyboard(order):
     current = order.get('status')
-    buttons = [{'text': ('✓ ' if code == current else '') + label,
+    buttons = [{'text': ('✓ ' if code == current or (code == 'paid' and order.get('paid_at')) else '') + label,
                 'callback_data': f'st:{order["number"]}:{code}'} for code, label in BUTTONS]
-    return {'inline_keyboard': [buttons[:2], buttons[2:]]}
+    return {'inline_keyboard': [buttons[i:i + 2] for i in range(0, len(buttons), 2)]}
 
 
 def _is_entity_error(response):
@@ -444,7 +471,7 @@ def _chat_title(chat, user):
 def _is_bound(db, cfg, chat_id):
     if chat_id in cfg.chat_ids:
         return True
-    return db.execute('SELECT 1 FROM telegram_chats WHERE chat_id=?', (chat_id,)).fetchone() is not None
+    return db.execute(f'SELECT 1 FROM {_chat_table(cfg)} WHERE chat_id=?', (chat_id,)).fetchone() is not None
 
 
 def _reply(cfg, chat_id, text):
@@ -468,7 +495,14 @@ def _handle_message(db, cfg, message):
     if command == 'start':
         _handle_start(db, cfg, chat, user, argument)
     elif command == 'orders':
-        _handle_orders(db, cfg, chat_id)
+        if cfg.role == 'supplier':
+            from .supplier import list_checks
+            list_checks(db, cfg, chat_id)
+        else:
+            _handle_orders(db, cfg, chat_id)
+    elif command in ('order', 'replace') and cfg.role == 'manager':
+        from .supplier import manager_command
+        manager_command(db, cfg, user.get('id'), chat_id, command, argument)
 
 
 def _handle_start(db, cfg, chat, user, code):
@@ -485,12 +519,14 @@ def _handle_start(db, cfg, chat, user, code):
         _reply(cfg, chat_id, 'Код не подошёл. Проверьте код подключения у администратора НОТА.')
         return
     user_id = user.get('id') if isinstance(user.get('id'), int) else None
-    db.execute('INSERT INTO telegram_chats(chat_id, user_id, title, added_at) VALUES(?,?,?,?) '
+    db.execute(f'INSERT INTO {_chat_table(cfg)}(chat_id, user_id, title, added_at) VALUES(?,?,?,?) '
                'ON CONFLICT(chat_id) DO UPDATE SET user_id=excluded.user_id, title=excluded.title',
                (chat_id, user_id, _chat_title(chat, user), time.time()))
     db.commit()
-    _reply(cfg, chat_id, 'Готово: новые заявки НОТА будут приходить в этот чат. '
-                         'Последние заявки: /orders')
+    _reply(cfg, chat_id, 'Готово: этот чат подключён к проверке состава. Ожидающие проверки: /orders'
+           if cfg.role == 'supplier' else
+           'Готово: новые заявки НОТА будут приходить в этот чат. '
+           'Последние заявки: /orders. Карточка заявки: /order НОМЕР')
 
 
 def _handle_orders(db, cfg, chat_id):
@@ -515,7 +551,7 @@ def _may_change(db, cfg, user_id):
         return False
     if user_id in cfg.allowed_user_ids:
         return True
-    return db.execute('SELECT 1 FROM telegram_chats WHERE user_id=?', (user_id,)).fetchone() is not None
+    return db.execute(f'SELECT 1 FROM {_chat_table(cfg)} WHERE user_id=?', (user_id,)).fetchone() is not None
 
 
 def _answer(cfg, callback_id, text, alert=False):
@@ -527,12 +563,17 @@ def _handle_callback(db, cfg, query):
     callback_id = query.get('id')
     if not callback_id:
         return
+    if cfg.role == 'supplier':
+        from .supplier import handle_callback
+        handle_callback(db, cfg, query)
+        return
     user = query.get('from') or {}
     match = CALLBACK_RE.match(str(query.get('data') or ''))
     if not match or match.group(2) not in dict(BUTTONS):
         _answer(cfg, callback_id, 'Кнопка устарела')
         return
-    if not _may_change(db, cfg, user.get('id')):
+    callback_chat = ((query.get('message') or {}).get('chat') or {}).get('id')
+    if not _may_change(db, cfg, user.get('id')) or not _is_bound(db, cfg, callback_chat):
         _answer(cfg, callback_id, 'Нет прав менять статус заявки', alert=True)
         return
     number, status = int(match.group(1)), match.group(2)
@@ -540,12 +581,30 @@ def _handle_callback(db, cfg, query):
     if not order:
         _answer(cfg, callback_id, 'Заявка не найдена', alert=True)
         return
+    if status == 'supplier':
+        from .supplier import request_check
+        message = request_check(db, order)
+        _answer(cfg, callback_id, message, alert=True)
+        return
+    if order['status'] in ('done', 'cancelled') and status != order['status']:
+        _answer(cfg, callback_id, 'Заявка уже закрыта', alert=True)
+        return
     if order['status'] == status:
         _answer(cfg, callback_id, f'Уже: {STATUSES[status]}')
         return
+    db.execute('BEGIN IMMEDIATE')
+    fresh = _load_order(db, order_id=order['id'])
+    if fresh['status'] in ('done', 'cancelled'):
+        db.rollback()
+        _answer(cfg, callback_id, 'Заявка уже закрыта', alert=True)
+        return
+    if status == 'paid':
+        db.execute('UPDATE orders SET paid_at=COALESCE(paid_at,?) WHERE id=?', (time.time(), order['id']))
     db.execute('UPDATE orders SET status=?, updated_at=? WHERE id=?', (status, time.time(), order['id']))
+    if status in ('paid', 'done', 'cancelled'):
+        db.execute("UPDATE supplier_checks SET state='superseded' WHERE order_id=? AND state='pending'", (order['id'],))
     db.commit()
-    order['status'] = status
+    order = _load_order(db, order_id=order['id'])
     message = query.get('message') or {}
     chat_id = (message.get('chat') or {}).get('id')
     if isinstance(chat_id, int) and message.get('message_id'):
@@ -566,10 +625,10 @@ def handle_update(connect, cfg, update):
         if isinstance(update_id, int):
             # Telegram может прислать то же обновление повторно: второй раз не выполняем.
             try:
-                db.execute('INSERT INTO telegram_updates VALUES(?,?)', (update_id, time.time()))
+                db.execute('INSERT INTO telegram_bot_updates VALUES(?,?,?)', (cfg.role, update_id, time.time()))
             except sqlite3.IntegrityError:
                 return
-            db.execute('DELETE FROM telegram_updates WHERE received_at<?', (time.time() - 2 * 86400,))
+            db.execute('DELETE FROM telegram_bot_updates WHERE received_at<?', (time.time() - 2 * 86400,))
             db.commit()
         if isinstance(update.get('message'), dict):
             _handle_message(db, cfg, update['message'])
@@ -578,7 +637,7 @@ def handle_update(connect, cfg, update):
         db.commit()
 
 
-def poll(connect, seconds=55, lock_path=None) -> int:
+def poll(connect, seconds=55, lock_path=None, role="manager") -> int:
     """Опрос Telegram для хостинга, до которого Telegram не может достучаться.
 
     На REG.RU входящие соединения от Telegram не доходят (вебхук: Connection timed out),
@@ -587,7 +646,7 @@ def poll(connect, seconds=55, lock_path=None) -> int:
     После каждого запроса отправляются новые заявки: в чат они попадают за 10-15 с.
     Возвращает число обработанных обновлений.
     """
-    cfg = load_config()
+    cfg = load_config(role)
     if not cfg:
         return 0
     lock = None
@@ -603,8 +662,11 @@ def poll(connect, seconds=55, lock_path=None) -> int:
     try:
         with closing(connect()) as db:
             init_db(db)
-            row = db.execute("SELECT value FROM telegram_state WHERE key='offset'").fetchone()
+            row = db.execute("SELECT value FROM telegram_state WHERE key=?", ("offset:" + role,)).fetchone()
             db.commit()
+        if not row and role == 'manager':
+            with closing(connect()) as db:
+                row = db.execute("SELECT value FROM telegram_state WHERE key='offset'").fetchone()
         offset = int(row[0]) if row else 0
         handled, webhook_cleared = 0, False
         deadline = time.monotonic() + seconds
@@ -630,10 +692,13 @@ def poll(connect, seconds=55, lock_path=None) -> int:
                     offset = max(offset, update['update_id'] + 1)
                 handled += 1
             with closing(connect()) as db:
-                db.execute("INSERT INTO telegram_state VALUES('offset',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                           (str(offset),))
+                db.execute("INSERT INTO telegram_state VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                           ("offset:" + role, str(offset)))
                 db.commit()
-                retry_pending(db, limit=3)
+                if role == 'manager':
+                    retry_pending(db, limit=3)
+                from .supplier import deliver_pending
+                deliver_pending(db)
         return handled
     finally:
         if lock:
@@ -642,7 +707,7 @@ def poll(connect, seconds=55, lock_path=None) -> int:
 
 def create_router(connect):
     """Маршрут POST /v1/telegram/webhook. connect: фабрика соединений sqlite3 из create_app."""
-    from fastapi import APIRouter, Request
+    from fastapi import APIRouter, BackgroundTasks, Request
     from fastapi.responses import JSONResponse
     from starlette.concurrency import run_in_threadpool
     try:
@@ -654,8 +719,11 @@ def create_router(connect):
     router = APIRouter(prefix='/v1')
 
     @router.post('/telegram/webhook')
-    async def webhook(request: Request):
-        cfg = load_config()
+    @router.post('/telegram/webhook/{role}')
+    async def webhook(request: Request, background_tasks: BackgroundTasks, role: str = 'manager'):
+        if role not in ('manager', 'supplier'):
+            return JSONResponse({'detail': 'Неизвестный бот'}, status_code=404)
+        cfg = load_config(role)
         if not _secret_ok(cfg, request.headers.get('x-telegram-bot-api-secret-token', '')):
             return JSONResponse({'detail': 'Доступ запрещён'}, status_code=403)
         try:
@@ -667,6 +735,11 @@ def create_router(connect):
         except Exception as error:
             # Telegram не должен повторять обновление из-за нашей ошибки: ответ всё равно 200.
             log(f'webhook: {type(error).__name__}: {error}')
+        def flush():
+            with closing(connect()) as db:
+                from .supplier import deliver_pending
+                deliver_pending(db)
+        background_tasks.add_task(flush)
         return {'ok': True}
 
     return router

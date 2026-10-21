@@ -1,0 +1,8 @@
+{
+  "bot_token": "REPLACE_WITH_ALANNOTABOT_TOKEN",
+  "bot_username": "alannotabot",
+  "pairing_code": "REPLACE_WITH_RANDOM_MANAGER_PAIRING_CODE",
+  "webhook_secret": "REPLACE_WITH_RANDOM_MANAGER_WEBHOOK_SECRET",
+  "chat_ids": [],
+  "allowed_user_ids": []
+}

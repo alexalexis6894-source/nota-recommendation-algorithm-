@@ -12,3 +12,5 @@ cd backend
 python3 -m venv venv && . venv/bin/activate
 pip install -r requirements.txt
 ```
+
+Два Telegram-бота, отметка оплаты и проверка состава: [инструкция](../docs/telegram-orders.md).

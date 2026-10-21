@@ -1,0 +1,8 @@
+{
+  "bot_token": "REPLACE_WITH_NOTAADMIN1BOT_TOKEN",
+  "bot_username": "notaadmin1bot",
+  "pairing_code": "REPLACE_WITH_RANDOM_SUPPLIER_PAIRING_CODE",
+  "webhook_secret": "REPLACE_WITH_RANDOM_SUPPLIER_WEBHOOK_SECRET",
+  "chat_ids": [],
+  "allowed_user_ids": []
+}
