@@ -123,6 +123,7 @@ class OrderInput(BaseModel):
     name: str = Field(default='', max_length=60)
     comment: str = Field(default='', max_length=300)
     consent: bool = False
+    bonus_spent: int = Field(default=0, ge=0, strict=True)
 
 
 def create_router(owner, connect, get_catalog, offers):
@@ -161,7 +162,9 @@ def create_router(owner, connect, get_catalog, offers):
             number = db.execute('SELECT COALESCE(MAX(number), 0) + 1 FROM orders').fetchone()[0]
             total = sum(i[4] for i in items)
             earned = bonus_for([i[4] for i in items])
-            spent = min(bonus_balance(db, user)['available'], total)
+            spent = body.bonus_spent
+            if spent > min(bonus_balance(db, user)['available'], total):
+                raise HTTPException(409, 'Доступная сумма бонусов изменилась. Обновите набор и выберите списание заново')
             db.execute('INSERT INTO orders(id,number,owner,phone,name,comment,total,status,created_at,updated_at,bonus_earned,bonus_spent) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
                        (order_id, number, user, phone, body.name.strip() or None, body.comment.strip() or None, total, 'new', now, now, earned, spent))
             db.executemany('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)', [(order_id, *i) for i in items])
@@ -182,6 +185,7 @@ def create_router(owner, connect, get_catalog, offers):
                 result.append({'number': number, 'total': total, 'status': status, 'created_at': created,
                                'bonus_earned': earned, 'bonus_spent': spent, 'to_pay': total - spent,
                                'items': [{'brand': b, 'name': n, 'volume': f'{v:g} мл', 'price': p} for b, n, v, p in items]})
-        return {'orders': result, 'bonus': bonus_balance(db, user)}
+            bonus = bonus_balance(db, user)
+        return {'orders': result, 'bonus': bonus}
 
     return router

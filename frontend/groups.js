@@ -7,6 +7,7 @@
   var groups = [], samples = [], kit = {mode:'preview',bonus:{available:0,pending:0,percent:15}}, active = null, response = null, requestId = 0, editId = null, mode = 'close';
   // Подборы обоих режимов по группе: запрос или готовый ответ, чтобы переключение было мгновенным.
   var cache = {};
+  var bonusPercent = 0;
   // Два режима подбора: ближе к своим ароматам или тот же характер с новыми нотами.
   var MODES = [['close','Похожие на мои','Те же главные ноты, что в вашей группе.'],['new','Новое в моём вкусе','Тот же характер, но другие ноты: чего у вас ещё нет.']];
   var selected = new Set(), previewId = 0, previewTimer, returnFocus, noticeTimer;
@@ -585,16 +586,35 @@
       node('p',{class:'ng-meter-hint',text:kitHint(n)})]);
   }
   // Итог заявки: сумма, списание бонусов, к оплате и сколько бонусов придёт за Экстра.
+  function bonusSpend() { return Math.floor(Math.min(kit.bonus.available,kitTotal())*bonusPercent/100); }
+  function updateBonusSummary() {
+    var spend=bonusSpend();
+    document.querySelectorAll('[data-bonus-slider]').forEach(function (el) { el.value=bonusPercent; });
+    document.querySelectorAll('[data-bonus-choice]').forEach(function (el) { el.textContent='Списать '+bonusPercent+'% · '+rub(spend); });
+    document.querySelectorAll('[data-bonus-spent]').forEach(function (el) { el.textContent='−'+rub(spend); });
+    document.querySelectorAll('[data-kit-total]').forEach(function (el) {
+      el.setAttribute('data-kit-total',kitTotal()-spend);
+      el.querySelector('b').textContent=rub(kitTotal()-spend);
+    });
+  }
   function kitSummary() {
-    var total=kitTotal(), spend=Math.min(kit.bonus.available,total), earn=kitBonus(), rows=[];
-    if(spend) {
-      rows.push(node('p',{class:'ng-line ng-sum-line'},[node('span',{text:'Пробники'}),node('span',{text:rub(total)})]));
-      rows.push(node('p',{class:'ng-line ng-sum-line'},[node('span',{text:'Бонусы'}),node('span',{text:'-'+rub(spend)})]));
+    var total=kitTotal(), spend=bonusSpend(), earn=kitBonus(), rows=[];
+    rows.push(node('p',{class:'ng-line ng-sum-line'},[node('span',{text:'Пробники'}),node('span',{text:rub(total)})]));
+    rows.push(node('p',{class:'ng-caption',text:'Накоплено ранее: '+rub(kit.bonus.available)+' бонусами. 1 бонус = 1 ₽.'}));
+    if(kit.bonus.available && total) {
+      var slider=node('input',{type:'range',min:'0',max:'100',step:'1',value:bonusPercent,'data-bonus-slider':'','aria-label':'Процент бонусов для списания'});
+      slider.addEventListener('input',function () { bonusPercent=Number(slider.value);updateBonusSummary(); });
+      rows.push(node('label',{class:'ng-bonus-picker'},[
+        node('span',{'data-bonus-choice':'',text:'Списать '+bonusPercent+'% · '+rub(spend)}),slider,
+        node('span',{class:'ng-bonus-scale','aria-hidden':'true'},[node('span',{text:'0%'}),node('span',{text:'100%'})])
+      ]));
+      if(kit.bonus.available>total) rows.push(node('p',{class:'ng-caption',text:'Для этой заявки доступно '+rub(total)+' бонусами. Остаток сохранится.'}));
+      rows.push(node('p',{class:'ng-line ng-sum-line'},[node('span',{text:'Списание бонусов'}),node('span',{'data-bonus-spent':'',text:'−'+rub(spend)})]));
     }
-    rows.push(node('p',{class:'ng-total','data-kit-total':total-spend},[node('span',{text:spend?'К оплате':'Итого'}),node('b',{text:rub(total-spend)})]));
-    if(earn) rows.push(node('p',{class:'ng-bonus',text:'+'+rub(earn)+' бонусами на следующий заказ. Начислим после получения этого.'}));
-    else if(kit.bonus.pending && !kit.bonus.available) rows.push(node('p',{class:'ng-caption',text:rub(kit.bonus.pending)+' бонусами станут доступны после получения прошлого заказа.'}));
-    return rows;
+    rows.push(node('p',{class:'ng-total','data-kit-total':total-spend},[node('span',{text:'К оплате'}),node('b',{text:rub(total-spend)})]));
+    if(earn) rows.push(node('p',{class:'ng-bonus',text:'За эту покупку начислим +'+rub(earn)+' бонусами после получения заказа. Их можно потратить на следующую покупку.'}));
+    if(kit.bonus.pending) rows.push(node('p',{class:'ng-caption',text:rub(kit.bonus.pending)+' бонусами ожидают получения предыдущих заказов и пока недоступны для списания.'}));
+    return [node('section',{'data-bonus-summary':'','aria-label':'Стоимость и бонусы'},rows)];
   }
   function renderKitBar() {
     var bar=$('kit-bar'); if(!bar) return;
@@ -662,16 +682,24 @@
       if(digits.length<10) { error.textContent='Введите номер телефона полностью';phone.focus();return; }
       if(!consent.checked) { error.textContent='Отметьте согласие, без него мы не сможем позвонить';return; }
       send.disabled=true;send.textContent='Отправляем…';
-      api.request('POST','/v1/orders',{phone:phone.value,name:name.value,consent:true}).then(function (d) {
+      document.querySelectorAll('[data-bonus-slider]').forEach(function (el) { el.disabled=true; });
+      api.request('POST','/v1/orders',{phone:phone.value,name:name.value,consent:true,bonus_spent:bonusSpend()}).then(function (d) {
+        bonusPercent=0;
         track('order_sent',{count:ready.length});
         root.textContent='';
         root.appendChild(node('h3',{class:'ng-done',text:'Заявка №'+d.number+' принята'}));
         root.appendChild(node('p',{text:'Позвоним на '+d.phone.replace(/^\+7(\d{3})(\d{3})(\d{2})(\d{2})$/,'+7 $1 $2-$3-$4')+', чтобы подтвердить состав и доставку. К оплате '+rub(d.to_pay!=null?d.to_pay:d.total)+(d.bonus_spent?' с учётом '+rub(d.bonus_spent)+' бонусами':'')+', оплата наличными при получении.'}));
-        if(d.bonus_earned) root.appendChild(node('p',{class:'ng-bonus',text:'+'+rub(d.bonus_earned)+' бонусами начислим после получения заказа. Они спишутся со следующей заявки.'}));
+        if(d.bonus_earned) root.appendChild(node('p',{class:'ng-bonus',text:'+'+rub(d.bonus_earned)+' бонусами начислим после получения заказа. В следующей заявке вы сможете выбрать, сколько потратить.'}));
         root.appendChild(button('Готово',function () { $('sample-preview').close(); },'btn ng-wide'));
         loadSamples();
       },function (e) {
+        document.querySelectorAll('[data-bonus-slider]').forEach(function (el) { el.disabled=false; });
         send.disabled=false;send.textContent='Отправить заявку';
+        if(e && e.status===409) {
+          bonusPercent=0;loadSamples().then(function () {
+            document.querySelectorAll('[data-bonus-summary]').forEach(function (el) { el.replaceWith(kitSummary()[0]); });
+          });
+        }
         error.textContent=e && e.detail || (e && e.status===429 ? 'Сейчас много заявок, попробуйте чуть позже' : 'Не удалось отправить заявку. Проверьте связь и попробуйте ещё раз');
       });
     });
